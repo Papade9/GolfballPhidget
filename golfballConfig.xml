@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>Golfland Golfball Phidget Settings</comment>
+<entry key="bottomLeft.name">Yellow</entry>
+<entry key="topLeft.color">ff0033</entry>
+<entry key="topLeft.name">Red</entry>
+<entry key="bottomRight.color">3300ff</entry>
+<entry key="topRight.name">green</entry>
+<entry key="bottomMiddle.name">purple</entry>
+<entry key="bottomRight.name">Blue</entry>
+<entry key="bottomMiddle.color">660099</entry>
+<entry key="topMiddle.color">ccccff</entry>
+<entry key="topRight.color">009900</entry>
+<entry key="topMiddle.name">Silver</entry>
+<entry key="bottomLeft.color">ffff00</entry>
+</properties>

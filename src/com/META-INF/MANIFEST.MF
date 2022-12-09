@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Main-Class: com.Main
+Class-Path: hibernate-commons-annotations-5.0.1.Final.jar phidget22.jar 
+ hibernate-core-5.2.3.Final.jar hibernate-c3p0-5.2.3.Final.jar hibernate
+ -jpa-2.1-api-1.0.0.Final.jar c3p0-0.9.2.1.jar
+

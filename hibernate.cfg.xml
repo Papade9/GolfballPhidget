@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name = "hibernate.connection.driver_class">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
+<!--        <property name = "hibernate.connection.url">jdbc:sqlserver://192.168.1.229;databaseName=Nreg</property>-->
+        <property name ="hibernate.connection.url">jdbc:sqlserver://192.168.51.13:1433;databaseName=Nreg</property>
+        <property name="connection.username">javauser</property>
+        <property name="connection.password">Roseville#15</property>
+        <property name="hibernate.c3p0.min_size">5</property>
+        <property name="hibernate.c3p0.max_size">20</property>
+        <property name="hibernate.c3p0.acquire_increment">5</property>
+        <property name="hibernate.c3p0.timeout">1800</property>
+        <property name="hibernate.temp.use_jdbc_metadata_defaults">false</property>
+        <!-- Select our SQL dialect -->
+        <property name = "hibernate.dialect">org.hibernate.dialect.SQLServer2012Dialect</property>
+
+        <!-- Echo the SQL to stdout -->
+        <property name="show_sql">true</property>
+
+        <property name="hibernate.enable_lazy_load_no_trans">true</property>
+
+        <!-- Set the current session context -->
+        <property name="current_session_context_class">thread</property>
+
+        <mapping class="com.db.tableclass.CreditEntity"/>
+        <mapping class="com.db.tableclass.LastUsedEntity"/>
+        <mapping class="com.db.tableclass.LocationSettingsEntity"/>
+        <mapping class="com.db.tableclass.PrintPathEntity"/>
+        <mapping class="com.db.tableclass.TicketTypeEntity"/>
+        <mapping class="com.db.tableclass.CashierEntity"/>
+        <mapping class="com.db.tableclass.RegisterSetupEntity"/>
+
+        <!-- <property name="connection.username"/> -->
+        <!-- <property name="connection.password"/> -->
+
+        <!-- DB schema will be updated if needed -->
+        <!-- <property name="hbm2ddl.auto">update</property> -->
+    </session-factory>
+</hibernate-configuration>
