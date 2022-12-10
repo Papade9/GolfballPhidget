@@ -23,6 +23,16 @@ public class Hopper {
 
     public String getSettingNameXML(){return settingNameXML;}
 
+    public void flashRing(){
+        try {
+            ringLight.setState(false);
+            Thread.sleep(500);
+            ringLight.setState(true);
+        }catch(PhidgetException | InterruptedException ex){
+
+        }
+    }
+
     public Hopper(String colorName, Integer number,String settingXMLName){
         hopperColor = colorName;
         hopperNumber = number;
@@ -78,21 +88,25 @@ public class Hopper {
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {
-                    if(MainScreen.getInstance().getMode().equals(MainScreen.TEST))
-                        MainScreen.getInstance().addLogEntry("Dispense Sensor " + number + " sensed");
-                    MainScreen.getInstance().decrementCredits();
-                    if (MainScreen.getInstance().getBallCredits() > 0) {
+                    if(Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 5L) {
+                        motor.setState(false);
+                        if (MainScreen.getInstance().getMode().equals(MainScreen.TEST))
+                            MainScreen.getInstance().addLogEntry("Dispense Sensor " + number + " sensed");
+                        MainScreen.getInstance().decrementCredits();
                         PlayAudioFile.playSound("./audio/ball-vend.wav");
-                        PlayAudioFile.playSound("./audio/youHave.wav");
-                        PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav");
-                        PlayAudioFile.playSound("./audio/ballsRemaining.wav");
-                    } else {
+                        if (MainScreen.getInstance().getBallCredits() > 0) {
+                            PlayAudioFile.playSound("./audio/youHave.wav");
+                            PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav");
+                            PlayAudioFile.playSound("./audio/ballsRemaining.wav");
+                        } else {
 //                            PlayAudioFile.playSound("./audio/haveGreatGame.wav");
-                        PlayAudioFile.playSound("./audio/golf-start.wav");
+                            PlayAudioFile.playSound("./audio/golf-start.wav");
+                        }
+                        if (!enabled)
+                            enabled = true;
+                    }else{
+                        motor.setState(false);
                     }
-                    motor.setState(false);
-                    if (!enabled)
-                        enabled = true;
                 }catch(PhidgetException dex){
                     setEnabled(false);
                 }
@@ -118,6 +132,14 @@ public class Hopper {
                 ringLight.close();
         }catch(PhidgetException ex){
             MainScreen.getInstance().addLogEntry("closeportsPhidgetError: " + ex);
+        }
+    }
+
+    public void resetRingLight(){
+        try {
+            ringLight.setState(enabled);
+        }catch(PhidgetException ex){
+
         }
     }
 
@@ -155,8 +177,10 @@ public class Hopper {
 
     public void test(){
         try{
-            motor.setState(true);
-            setTimeout();
+            if(Duration.between(MainScreen.getInstance().getStartTime(),LocalDateTime.now()).toMillis() > 10L) {
+                motor.setState(true);
+                setTimeout();
+            }
         }catch(PhidgetException ex){
             setEnabled(false);
             MainScreen.getInstance().addLogEntry("testPhidgetError: " + ex);

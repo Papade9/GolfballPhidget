@@ -14,8 +14,10 @@ import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import javax.swing.*;
 /*
@@ -40,16 +42,19 @@ public class MainScreen extends JFrame {
     private Hopper _hopper5;
     private Hopper _hopper6;
     private static MainScreen _instance = null;
-    private Integer _ballCredits = 12;
+    private Integer _ballCredits = 0;
     private LocalDateTime _lastButtonPressed = null;
     private ArrayList<TicketTypeEntity> _ticketTypes = new ArrayList<>();
     private boolean _acceptETabs;
     private String _printPath;
     private int _cashierId;
-    private Integer _mode = 0;
+    private Integer _mode = 2;
     public static final Integer PHIDGET_TEST = 1;
     public static final Integer NORMAL = 0;
     public static final Integer TEST = 2;
+    private Hopper[] _hoppers = new Hopper[6];
+    private int _lastHopperRingFlashed = 0;
+    private LocalDateTime _startTime = LocalDateTime.now();
 
     public synchronized static MainScreen getInstance(){
         if(_instance == null)
@@ -58,6 +63,8 @@ public class MainScreen extends JFrame {
     }
 
     public Integer getMode(){return _mode;}
+
+    public LocalDateTime getStartTime(){return _startTime;}
 
     private MainScreen() {
         initComponents();
@@ -108,6 +115,12 @@ public class MainScreen extends JFrame {
             _hopper4 = new Hopper(Settings.getSetting("bottomLeft.name", "error"), 4, "bottomLeft");
             _hopper5 = new Hopper(Settings.getSetting("bottomMiddle.name", "error"), 5, "bottomMiddle");
             _hopper6 = new Hopper(Settings.getSetting("bottomRight.name", "error"), 6, "bottomRight");
+            _hoppers[0] = _hopper1;
+            _hoppers[1] = _hopper2;
+            _hoppers[2] = _hopper3;
+            _hoppers[3] = _hopper4;
+            _hoppers[4] = _hopper5;
+            _hoppers[5] = _hopper6;
         }else{
             DigitalOutput output = null;
             Integer hub = 0;
@@ -157,12 +170,20 @@ public class MainScreen extends JFrame {
             }
         });
         _service.scheduleWithFixedDelay(new Runnable() {
+            int count = 0;
             @Override
             public void run() {
-                checkHoppersEnabled();
-                txtInput.requestFocus();
+                if(count == 1) {
+                    checkHoppersEnabled();
+                    txtInput.requestFocus();
+                }
+                if(_ballCredits < 1 || Duration.between(_lastButtonPressed,LocalDateTime.now()).toMillis() > 10L)
+                    randomizeRingLights();
+                count++;
+                if(count > 2)
+                    count = 0;
             }
-        },1000,2000, TimeUnit.MILLISECONDS);
+        },1000,1000, TimeUnit.MILLISECONDS);
         _printPath = ((PrintPathEntity) new HQuery.selectRecord("from PrintPathEntity where id=:id", "hibernate.cfg.xml",new HQuery.HQueryTuple("id",Register.get().getRegister().getReceiptPrinterId())).query()).getPath();
         _cashierId = ((CashierEntity) new HQuery.selectRecord("from CashierEntity where profileId=:kiosk", "hibernate.cfg.xml",new HQuery.HQueryTuple("kiosk",-8183)).query()).getCashierId();
         setIconImage(new ImageIcon(MainScreen.class.getResource("/image/golfland_nreg_icon.png")).getImage());
@@ -170,33 +191,43 @@ public class MainScreen extends JFrame {
         toggleSetup.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Integer hub = 0;
-                CDialog dialog = new CDialog(null);
-                dialog.setMessages("Hub","");
-                dialog.showIt();
-                hub = Integer.parseInt(dialog.getValidatedText());
-                dialog.setMessages("Port","");
-                dialog.showIt();
-                String response = HopperConfig.getPort(hub,Integer.parseInt(dialog.getValidatedText()));
-                addLogEntry(response);
-                if(response.contains("hopper1"))
-                    _hopper1.test();
-                if(response.contains("hopper2"))
-                    _hopper2.test();
-                if(response.contains("hopper3"))
-                    _hopper3.test();
-                if(response.contains("hopper4"))
-                    _hopper4.test();
-                if(response.contains("hopper5"))
-                    _hopper5.test();
-                if(response.contains("hopper6"))
-                    _hopper6.test();
+                if(_mode.equals(TEST)) {
+                    Integer hub = 0;
+                    CDialog dialog = new CDialog(null);
+                    dialog.setMessages("Hub", "");
+                    dialog.showIt();
+                    hub = Integer.parseInt(dialog.getValidatedText());
+                    dialog.setMessages("Port", "");
+                    dialog.showIt();
+                    String response = HopperConfig.getPort(hub, Integer.parseInt(dialog.getValidatedText()));
+                    addLogEntry(response);
+                    if (response.contains("hopper1"))
+                        _hopper1.test();
+                    if (response.contains("hopper2"))
+                        _hopper2.test();
+                    if (response.contains("hopper3"))
+                        _hopper3.test();
+                    if (response.contains("hopper4"))
+                        _hopper4.test();
+                    if (response.contains("hopper5"))
+                        _hopper5.test();
+                    if (response.contains("hopper6"))
+                        _hopper6.test();
+                }
             }
         });
     }
 
     public int getBallCredits(){return _ballCredits;}
 
+    private void randomizeRingLights(){
+        Integer hopper;
+        do {
+            hopper = ThreadLocalRandom.current().nextInt(0, 6);
+        }while(hopper.equals(_lastHopperRingFlashed));
+        _hoppers[hopper].flashRing();
+        _lastHopperRingFlashed = hopper;
+    }
     public void decrementCredits(){
         _ballCredits--;
         if(_ballCredits < 0)
@@ -264,6 +295,7 @@ public class MainScreen extends JFrame {
                                 new HQuery.update("hibernate.cfg.xml", LastUsedEntity.class).query(tempUsed);
                             }
                             _ballCredits+=tempCredit.getQuantity();
+                            resetRingLights();
                             if(scorecardPlayers > 0 && scorecardPlayers < 4)
                                 PlayAudioFile.playSound("./audio/scanMorePlayers.wav");
                             else
@@ -276,6 +308,12 @@ public class MainScreen extends JFrame {
                     PlayAudioFile.playSound("./audio/golfWindow.wav");
                 }
             }
+        }
+    }
+
+    private void resetRingLights(){
+        for(Hopper h : _hoppers) {
+            h.resetRingLight();
         }
     }
 

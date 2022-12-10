@@ -28,7 +28,7 @@ public class PlayAudioFile {
                 AudioInputStream inputStream = AudioSystem.getAudioInputStream((file.toURI().toURL()));
                 clip.open(inputStream);
             }catch(Exception ex){
-                MainScreen.getInstance().addLogEntry("Bad audio file inputStream");
+                MainScreen.getInstance().addLogEntry("Bad audio file inputStream: " + url);
             }
         }
 
