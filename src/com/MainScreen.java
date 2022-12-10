@@ -48,13 +48,14 @@ public class MainScreen extends JFrame {
     private boolean _acceptETabs;
     private String _printPath;
     private int _cashierId;
-    private Integer _mode = 2;
+    private Integer _mode = 0;
     public static final Integer PHIDGET_TEST = 1;
     public static final Integer NORMAL = 0;
     public static final Integer TEST = 2;
     private Hopper[] _hoppers = new Hopper[6];
     private int _lastHopperRingFlashed = 0;
     private LocalDateTime _startTime = LocalDateTime.now();
+    private LocalDateTime _lastCardScan = LocalDateTime.now();
 
     public synchronized static MainScreen getInstance(){
         if(_instance == null)
@@ -160,7 +161,8 @@ public class MainScreen extends JFrame {
         txtInput.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText())){
+                if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
+                    _lastCardScan = LocalDateTime.now();
                     processTicket();
                     txtInput.setText("");
                 }else if(e.getKeyChar() == KeyEvent.VK_ENTER){
@@ -177,7 +179,7 @@ public class MainScreen extends JFrame {
                     checkHoppersEnabled();
                     txtInput.requestFocus();
                 }
-                if(_ballCredits < 1 || Duration.between(_lastButtonPressed,LocalDateTime.now()).toMillis() > 10L)
+                if(_ballCredits < 1 || Duration.between(_lastButtonPressed,LocalDateTime.now()).toMillis() > 10000L)
                     randomizeRingLights();
                 count++;
                 if(count > 2)
@@ -252,62 +254,69 @@ public class MainScreen extends JFrame {
         params[2] = new HQuery.HQueryTuple("thisMorning",Register.get().getThisMorning());
         for(String redeemTicket : redeemTickets) {
             params[0] = new HQuery.HQueryTuple("redeemTicket",Integer.valueOf(redeemTicket));
-            credits.addAll(new HQuery.select("from CreditEntity where redeemTicketId=:redeemTicket and ticketNumber=:ticketNumber and (dateExpires is null or dateExpires>=:thisMorning", "com/hibernate.cfg.xml", params).query());
+            credits.addAll(new HQuery.select("from CreditEntity where redeemTicketId=:redeemTicket and ticketNumber=:ticketNumber and (dateExpires is null or dateExpires>=:thisMorning)", "hibernate.cfg.xml", params).query());
         }
-        for(CreditEntity tempCredit : credits) {
-            if(!creditFound) {
-                TicketTypeEntity ticketTypefound = null;
-                for(TicketTypeEntity tt : _ticketTypes){
-                    if(tempCredit.getTicketTypeId().equals(tt.getTicketTypeId()))
-                        ticketTypefound = tt;
-                }
-                if(ticketTypefound == null){
-                    ticketTypefound = new HQuery.selectRecord("from TicketTypeEntity where ticketTypeId=:id", "com/hibernate.cfg.xml",new HQuery.HQueryTuple("id",tempCredit.getTicketTypeId())).query();
-                    if(ticketTypefound != null) {
-                        _ticketTypes.add(ticketTypefound);
+        if(credits.size() > 0) {
+            for (CreditEntity tempCredit : credits) {
+                if (!creditFound) {
+                    TicketTypeEntity ticketTypefound = null;
+                    for (TicketTypeEntity tt : _ticketTypes) {
+                        if (tempCredit.getTicketTypeId().equals(tt.getTicketTypeId()))
+                            ticketTypefound = tt;
                     }
-                }
-                if(ticketTypefound != null && ticketTypefound.isGolf() && _acceptETabs) {
-                    scorecardPlayers += tempCredit.getQuantity();
-                    creditFound = true;
-                }else if(ticketTypefound != null && !ticketTypefound.isGolf()){
-                    creditFound = true;
-                }
-                if(creditFound){
-                    if(tempCredit.getDateUsed() == null || tempCredit.getDateUsed().plusMinutes(tempCredit.getPlayMinutes()).isAfter(LocalDateTime.now())){
-                        if(tempCredit.getPlayMinutes() != null && tempCredit.getPlayMinutes() > 0){
-                            ArrayList<LastUsedEntity> lastUsed = getLastUsed(tempCredit.getRedeemTicketId(),Long.valueOf(txtInput.getText()));
-                            if(lastUsed.size() > 0)
-                                creditFound = false;
+                    if (ticketTypefound == null) {
+                        ticketTypefound = new HQuery.selectRecord("from TicketTypeEntity where ticketTypeId=:id", "hibernate.cfg.xml", new HQuery.HQueryTuple("id", tempCredit.getTicketTypeId())).query();
+                        if (ticketTypefound != null) {
+                            _ticketTypes.add(ticketTypefound);
                         }
-                        if(creditFound) {
-                            tempCredit.dateUsed = LocalDateTime.now();
-                            tempCredit.registerId = Register.get().getRegister().getRegisterId();   // This marks the credit as Scanned and not to be scanned again.
-                            new HQuery.update("hibernate.cfg.xml", CreditEntity.class).query(tempCredit);
-                            if(ticketTypefound.isGolf()){
-                                LastUsedEntity tempUsed = new LastUsedEntity();
-                                tempUsed.setCashierId(_cashierId);
-                                tempUsed.setLocationId(Register.get().getLocation().getLocationId());
-                                tempUsed.setRedeemTicketId(tempCredit.getRedeemTicketId());
-                                tempUsed.setRegisterId(Register.get().getRegister().getRegisterId());
-                                tempUsed.setTicketNumber(tempCredit.getTicketNumber());
-                                tempUsed.setTimeStamp(LocalDateTime.now());
-                                new HQuery.update("hibernate.cfg.xml", LastUsedEntity.class).query(tempUsed);
+                    }
+                    if (ticketTypefound != null && !ticketTypefound.isGolf() && _acceptETabs) {
+                        scorecardPlayers += tempCredit.getQuantity();
+                        creditFound = true;
+                    } else if (ticketTypefound != null && ticketTypefound.isGolf()) {
+                        creditFound = true;
+                    }
+                    if (creditFound) {
+                        if (tempCredit.getDateUsed() == null || tempCredit.getDateUsed().plusMinutes(tempCredit.getPlayMinutes()).isAfter(LocalDateTime.now())) {
+                            if (tempCredit.getPlayMinutes() != null && tempCredit.getPlayMinutes() > 0) {
+                                ArrayList<LastUsedEntity> lastUsed = getLastUsed(tempCredit.getRedeemTicketId(), Long.valueOf(txtInput.getText()));
+                                if (lastUsed.size() > 0)
+                                    creditFound = false;
                             }
-                            _ballCredits+=tempCredit.getQuantity();
-                            resetRingLights();
-                            if(scorecardPlayers > 0 && scorecardPlayers < 4)
-                                PlayAudioFile.playSound("./audio/scanMorePlayers.wav");
-                            else
-                                PlayAudioFile.playSound("./audio/chooseBall.wav");
-                            if(scorecardPlayers >= 4)
-                                GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers),_printPath,false);
+                            if (creditFound) {
+                                tempCredit.dateUsed = LocalDateTime.now();
+                                tempCredit.registerId = Register.get().getRegister().getRegisterId();   // This marks the credit as Scanned and not to be scanned again.
+                                new HQuery.update("hibernate.cfg.xml", CreditEntity.class).query(tempCredit);
+                                if (ticketTypefound.isGolf()) {
+                                    LastUsedEntity tempUsed = new LastUsedEntity();
+                                    tempUsed.setCashierId(_cashierId);
+                                    tempUsed.setLocationId(Register.get().getLocation().getLocationId());
+                                    tempUsed.setRedeemTicketId(tempCredit.getRedeemTicketId());
+                                    tempUsed.setRegisterId(Register.get().getRegister().getRegisterId());
+                                    tempUsed.setTicketNumber(tempCredit.getTicketNumber());
+                                    tempUsed.setTimeStamp(LocalDateTime.now());
+                                    new HQuery.update("hibernate.cfg.xml", LastUsedEntity.class).query(tempUsed);
+                                }
+                                _ballCredits += tempCredit.getQuantity();
+                                resetRingLights();
+                                if (scorecardPlayers > 0 && scorecardPlayers < 4)
+                                    PlayAudioFile.playSound("./audio/scanMorePlayers.wav");
+                                else
+                                    PlayAudioFile.playSound("./audio/golf-start.wav");
+//                                    PlayAudioFile.playSound("./audio/chooseBall.wav");
+                                if (scorecardPlayers >= 4)
+                                    GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers), _printPath, false);
+                            }
+                        }else{
+                            PlayAudioFile.playSound("./audio/golfWindow.wav");
                         }
+                    } else {
+                        PlayAudioFile.playSound("./audio/golfWindow.wav");
                     }
-                }else{
-                    PlayAudioFile.playSound("./audio/golfWindow.wav");
                 }
             }
+        }else{
+            PlayAudioFile.playSound("./audio/golfWindow.wav");
         }
     }
 

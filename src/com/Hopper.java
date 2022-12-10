@@ -16,6 +16,7 @@ public class Hopper {
     private boolean enabled = true;
     private Thread motorTimeoutThread;
     private String settingNameXML;
+    private LocalDateTime _lastDispenseSensor = LocalDateTime.now();
 
     public String getHopperColor(){return hopperColor;}
 
@@ -53,7 +54,7 @@ public class Hopper {
                             setEnabled(false);
                         }
                     }
-                }else if(enabled){
+                }else if(enabled && MainScreen.getInstance().getBallCredits() > 0){
 //                    PlayAudioFile.playSound("./audio/ballout.wav");
                     PlayAudioFile.playSound("./audio/ball-out.wav");
                 }
@@ -88,7 +89,8 @@ public class Hopper {
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {
-                    if(Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 5L) {
+                    if(Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 1200L) {
+                        _lastDispenseSensor = LocalDateTime.now();
                         motor.setState(false);
                         if (MainScreen.getInstance().getMode().equals(MainScreen.TEST))
                             MainScreen.getInstance().addLogEntry("Dispense Sensor " + number + " sensed");
@@ -97,14 +99,20 @@ public class Hopper {
                         if (MainScreen.getInstance().getBallCredits() > 0) {
                             PlayAudioFile.playSound("./audio/youHave.wav");
                             PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav");
-                            PlayAudioFile.playSound("./audio/ballsRemaining.wav");
+                            try{
+                                while(PlayAudioFile.isAlive()){
+                                    Thread.sleep(1);
+                                }
+                            }catch(InterruptedException ex){
+
+                            }
+                            PlayAudioFile.playSound("./audio/ballRemaining.wav");
                         } else {
-//                            PlayAudioFile.playSound("./audio/haveGreatGame.wav");
-                            PlayAudioFile.playSound("./audio/golf-start.wav");
+                            PlayAudioFile.playSound("./audio/haveGreatGame.wav");
                         }
                         if (!enabled)
                             enabled = true;
-                    }else{
+                    }else if(motor.getState()){
                         motor.setState(false);
                     }
                 }catch(PhidgetException dex){
@@ -177,7 +185,7 @@ public class Hopper {
 
     public void test(){
         try{
-            if(Duration.between(MainScreen.getInstance().getStartTime(),LocalDateTime.now()).toMillis() > 10L) {
+            if(Duration.between(MainScreen.getInstance().getStartTime(),LocalDateTime.now()).toMillis() > 10000L) {
                 motor.setState(true);
                 setTimeout();
             }

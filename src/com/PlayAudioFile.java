@@ -43,6 +43,8 @@ public class PlayAudioFile {
         }
     }
 
+    public static boolean isAlive(){return _playThread != null && _playThread.isAlive();}
+
     public static synchronized void playSound(final String url) {
         if(_playThread == null) {
             _soundRunnable = new SoundRunnable();
@@ -50,6 +52,13 @@ public class PlayAudioFile {
             _soundRunnable.setFile(url);
             _playThread.start();
         }else{
+            while(_playThread.isAlive()) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException ex) {
+
+                }
+            }
             _soundRunnable.stop();
             _soundRunnable.setFile(url);
             _soundRunnable.run();
