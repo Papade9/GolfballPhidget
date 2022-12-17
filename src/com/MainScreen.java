@@ -15,6 +15,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -43,9 +45,9 @@ public class MainScreen extends JFrame {
     private Hopper _hopper6;
     private static MainScreen _instance = null;
     private Integer _ballCredits = 0;
-    private LocalDateTime _lastButtonPressed = null;
+    private LocalDateTime _lastButtonPressed = LocalDateTime.now();
     private ArrayList<TicketTypeEntity> _ticketTypes = new ArrayList<>();
-    private boolean _acceptETabs;
+    private boolean _acceptETabs, _processingTicket;
     private String _printPath;
     private int _cashierId;
     private Integer _mode = 0;
@@ -53,7 +55,7 @@ public class MainScreen extends JFrame {
     public static final Integer NORMAL = 0;
     public static final Integer TEST = 2;
     private Hopper[] _hoppers = new Hopper[6];
-    private int _lastHopperRingFlashed = 0;
+    private int _lastHopperRingFlashed, _lastHopperQuantityFlashed = 0;
     private LocalDateTime _startTime = LocalDateTime.now();
     private LocalDateTime _lastCardScan = LocalDateTime.now();
 
@@ -79,12 +81,13 @@ public class MainScreen extends JFrame {
                     _hopper4.closePorts();
                     _hopper5.closePorts();
                     _hopper6.closePorts();
-                    System.exit(0);
+
                     try {
                         Phidget.finalize(0);
                     }catch(PhidgetException ex){
 
                     }
+                    System.exit(0);
                 }
             }
         });
@@ -161,13 +164,19 @@ public class MainScreen extends JFrame {
         txtInput.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
+                if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L && !_processingTicket){
+                    _processingTicket = true;
                     _lastCardScan = LocalDateTime.now();
                     processTicket();
                     txtInput.setText("");
-                }else if(e.getKeyChar() == KeyEvent.VK_ENTER){
+                }else if(e.getKeyChar() == KeyEvent.VK_ENTER && !_processingTicket && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
+                    if(txtInput.getText().equals("credit")) {
+                        PlayAudioFile.playSound("./audio/golf-start.wav", false);
+                        _ballCredits++;
+                    }else {
+                        PlayAudioFile.playSound("./audio/tryAgain.wav", true);
+                    }
                     txtInput.setText("");
-                    PlayAudioFile.playSound("./audio/tryAgain.wav");
                 }
             }
         });
@@ -185,7 +194,7 @@ public class MainScreen extends JFrame {
                 if(count > 2)
                     count = 0;
             }
-        },1000,1000, TimeUnit.MILLISECONDS);
+        },10000,800, TimeUnit.MILLISECONDS);
         _printPath = ((PrintPathEntity) new HQuery.selectRecord("from PrintPathEntity where id=:id", "hibernate.cfg.xml",new HQuery.HQueryTuple("id",Register.get().getRegister().getReceiptPrinterId())).query()).getPath();
         _cashierId = ((CashierEntity) new HQuery.selectRecord("from CashierEntity where profileId=:kiosk", "hibernate.cfg.xml",new HQuery.HQueryTuple("kiosk",-8183)).query()).getCashierId();
         setIconImage(new ImageIcon(MainScreen.class.getResource("/image/golfland_nreg_icon.png")).getImage());
@@ -220,15 +229,29 @@ public class MainScreen extends JFrame {
         });
     }
 
+    public void setMode(Integer mode){_mode = mode;}
+
     public int getBallCredits(){return _ballCredits;}
 
     private void randomizeRingLights(){
-        Integer hopper;
+        Integer numLights;
+        Integer hopper = 0;
         do {
-            hopper = ThreadLocalRandom.current().nextInt(0, 6);
-        }while(hopper.equals(_lastHopperRingFlashed));
-        _hoppers[hopper].flashRing();
-        _lastHopperRingFlashed = hopper;
+            numLights = ThreadLocalRandom.current().nextInt(0, 3);
+        }while(numLights.equals(_lastHopperQuantityFlashed));
+        HashSet<Integer> lightsToFlash = new HashSet<>();
+        for(int i=0;i<numLights;i++) {
+            do {
+                hopper = ThreadLocalRandom.current().nextInt(0, 6);
+            } while (numLights == 1 && hopper.equals(_lastHopperRingFlashed) || lightsToFlash.contains(hopper));
+            lightsToFlash.add(hopper);
+        }
+        Iterator<Integer> it = lightsToFlash.iterator();
+        for(int i=0;i<numLights;i++)
+            _hoppers[it.next()].flashRing();
+        if(numLights == 1)
+            _lastHopperRingFlashed = hopper;
+        _lastHopperQuantityFlashed = numLights;
     }
     public void decrementCredits(){
         _ballCredits--;
@@ -247,77 +270,83 @@ public class MainScreen extends JFrame {
     private void processTicket(){
         ArrayList<CreditEntity> credits = new ArrayList<>();
         boolean creditFound = false;
+        int totalCreditsFound = 0;
         Integer scorecardPlayers = 0;
         String[] redeemTickets = Register.get().getRegister().getEmbedThumb().split(",");
-        HQuery.HQueryTuple[] params = new HQuery.HQueryTuple[3];
+        HQuery.HQueryTuple[] params = new HQuery.HQueryTuple[4];
         params[1] = new HQuery.HQueryTuple("ticketNumber",Long.valueOf(txtInput.getText()));
         params[2] = new HQuery.HQueryTuple("thisMorning",Register.get().getThisMorning());
         for(String redeemTicket : redeemTickets) {
             params[0] = new HQuery.HQueryTuple("redeemTicket",Integer.valueOf(redeemTicket));
             credits.addAll(new HQuery.select("from CreditEntity where redeemTicketId=:redeemTicket and ticketNumber=:ticketNumber and (dateExpires is null or dateExpires>=:thisMorning)", "hibernate.cfg.xml", params).query());
+//            addLogEntry("Initial tickets found: " + credits.size());
+            if(credits.size() > 0) {
+                params[3] = new HQuery.HQueryTuple("trans",credits.get(0).getTransactionId());
+                credits.addAll(new HQuery.select("from CreditEntity where redeemTicketId=:redeemTicket and ticketNumber!=:ticketNumber and transactionId=:trans and (dateExpires is null or dateExpires>=:thisMorning)", "hibernate.cfg.xml", params).query());
+//                addLogEntry("After additional: " + credits.size());
+            }
         }
         if(credits.size() > 0) {
             for (CreditEntity tempCredit : credits) {
-                if (!creditFound) {
-                    TicketTypeEntity ticketTypefound = null;
-                    for (TicketTypeEntity tt : _ticketTypes) {
-                        if (tempCredit.getTicketTypeId().equals(tt.getTicketTypeId()))
-                            ticketTypefound = tt;
+                TicketTypeEntity ticketTypefound = null;
+                for (TicketTypeEntity tt : _ticketTypes) {
+                    if (tempCredit.getTicketTypeId().equals(tt.getTicketTypeId()))
+                        ticketTypefound = tt;
+                }
+                if (ticketTypefound == null) {
+                    ticketTypefound = new HQuery.selectRecord("from TicketTypeEntity where ticketTypeId=:id", "hibernate.cfg.xml", new HQuery.HQueryTuple("id", tempCredit.getTicketTypeId())).query();
+                    if (ticketTypefound != null) {
+                        _ticketTypes.add(ticketTypefound);
                     }
-                    if (ticketTypefound == null) {
-                        ticketTypefound = new HQuery.selectRecord("from TicketTypeEntity where ticketTypeId=:id", "hibernate.cfg.xml", new HQuery.HQueryTuple("id", tempCredit.getTicketTypeId())).query();
-                        if (ticketTypefound != null) {
-                            _ticketTypes.add(ticketTypefound);
+                }
+                if (ticketTypefound != null && !ticketTypefound.isGolf() && _acceptETabs) {
+                    scorecardPlayers += tempCredit.getQuantity();
+                    creditFound = true;
+                } else if (ticketTypefound != null && ticketTypefound.isGolf()) {
+                    creditFound = true;
+                }
+                if (creditFound) {
+                    if (tempCredit.getDateUsed() == null || tempCredit.getDateUsed().plusMinutes(tempCredit.getPlayMinutes()).isAfter(LocalDateTime.now())) {
+                        if (tempCredit.getPlayMinutes() != null && tempCredit.getPlayMinutes() > 0) {
+                            ArrayList<LastUsedEntity> lastUsed = getLastUsed(tempCredit.getRedeemTicketId(), Long.valueOf(txtInput.getText()));
+                            if (lastUsed.size() > 0)
+                                creditFound = false;
                         }
-                    }
-                    if (ticketTypefound != null && !ticketTypefound.isGolf() && _acceptETabs) {
-                        scorecardPlayers += tempCredit.getQuantity();
-                        creditFound = true;
-                    } else if (ticketTypefound != null && ticketTypefound.isGolf()) {
-                        creditFound = true;
-                    }
-                    if (creditFound) {
-                        if (tempCredit.getDateUsed() == null || tempCredit.getDateUsed().plusMinutes(tempCredit.getPlayMinutes()).isAfter(LocalDateTime.now())) {
-                            if (tempCredit.getPlayMinutes() != null && tempCredit.getPlayMinutes() > 0) {
-                                ArrayList<LastUsedEntity> lastUsed = getLastUsed(tempCredit.getRedeemTicketId(), Long.valueOf(txtInput.getText()));
-                                if (lastUsed.size() > 0)
-                                    creditFound = false;
+                        if (creditFound) {
+                            tempCredit.dateUsed = LocalDateTime.now();
+                            tempCredit.registerId = Register.get().getRegister().getRegisterId();   // This marks the credit as Scanned and not to be scanned again.
+                            new HQuery.update("hibernate.cfg.xml", CreditEntity.class).query(tempCredit);
+                            if (ticketTypefound.isGolf()) {
+                                LastUsedEntity tempUsed = new LastUsedEntity();
+                                tempUsed.setCashierId(_cashierId);
+                                tempUsed.setLocationId(Register.get().getLocation().getLocationId());
+                                tempUsed.setRedeemTicketId(tempCredit.getRedeemTicketId());
+                                tempUsed.setRegisterId(Register.get().getRegister().getRegisterId());
+                                tempUsed.setTicketNumber(tempCredit.getTicketNumber());
+                                tempUsed.setTimeStamp(LocalDateTime.now());
+                                new HQuery.update("hibernate.cfg.xml", LastUsedEntity.class).query(tempUsed);
                             }
-                            if (creditFound) {
-                                tempCredit.dateUsed = LocalDateTime.now();
-                                tempCredit.registerId = Register.get().getRegister().getRegisterId();   // This marks the credit as Scanned and not to be scanned again.
-                                new HQuery.update("hibernate.cfg.xml", CreditEntity.class).query(tempCredit);
-                                if (ticketTypefound.isGolf()) {
-                                    LastUsedEntity tempUsed = new LastUsedEntity();
-                                    tempUsed.setCashierId(_cashierId);
-                                    tempUsed.setLocationId(Register.get().getLocation().getLocationId());
-                                    tempUsed.setRedeemTicketId(tempCredit.getRedeemTicketId());
-                                    tempUsed.setRegisterId(Register.get().getRegister().getRegisterId());
-                                    tempUsed.setTicketNumber(tempCredit.getTicketNumber());
-                                    tempUsed.setTimeStamp(LocalDateTime.now());
-                                    new HQuery.update("hibernate.cfg.xml", LastUsedEntity.class).query(tempUsed);
-                                }
-                                _ballCredits += tempCredit.getQuantity();
-                                resetRingLights();
-                                if (scorecardPlayers > 0 && scorecardPlayers < 4)
-                                    PlayAudioFile.playSound("./audio/scanMorePlayers.wav");
-                                else
-                                    PlayAudioFile.playSound("./audio/golf-start.wav");
-//                                    PlayAudioFile.playSound("./audio/chooseBall.wav");
-                                if (scorecardPlayers >= 4)
-                                    GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers), _printPath, false);
-                            }
-                        }else{
-                            PlayAudioFile.playSound("./audio/golfWindow.wav");
+                            _ballCredits += tempCredit.getQuantity();
+                            totalCreditsFound += tempCredit.getQuantity();
+                            addLogEntry("BallCredits:" + _ballCredits);
+                            resetRingLights();
+                            if (scorecardPlayers > 0 && scorecardPlayers < 4)
+                                PlayAudioFile.playSound("./audio/scanMorePlayers.wav",true);
+                            else
+                                PlayAudioFile.playSound("./audio/golf-start.wav",true);
+//                                    PlayAudioFile.playSound("./audio/chooseBall.wav",true);
+                            if (scorecardPlayers >= 4)
+                                GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers), _printPath, false);
                         }
-                    } else {
-                        PlayAudioFile.playSound("./audio/golfWindow.wav");
                     }
                 }
             }
+            if(totalCreditsFound == 0)
+                PlayAudioFile.playSound("./audio/golfWindow.wav",false);
         }else{
-            PlayAudioFile.playSound("./audio/golfWindow.wav");
+            PlayAudioFile.playSound("./audio/golfWindow.wav",false);
         }
+        _processingTicket = false;
     }
 
     private void resetRingLights(){
@@ -564,31 +593,57 @@ public class MainScreen extends JFrame {
     }
 
     private void addBtnListener(HopperFunctionButton btn, Hopper hopper) {
-        btn.addActionListener(e -> {
-            if(!toggleSetup.isSelected()) {
-                if (btn.isEnabled()) {
-                    btn.setEnabled(false);
-                    hopper.setEnabled(false);
-                } else {
-                    hopper.test();
-                    try {
-                        Thread.sleep(3000);
-                        btn.setEnabled(hopper.isEnabled());
-                    } catch (InterruptedException ex) {
+        btn.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent mouseEvent) {
 
+            }
+
+            @Override
+            public void mousePressed(MouseEvent mouseEvent) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent mouseEvent) {
+                if(!toggleSetup.isSelected()) {
+                    addLogEntry("Button " + btn.getText() + " is " + (hopper.isEnabled() ? " enabled" : "disabled"));
+                    if (hopper.isEnabled()) {
+                        addLogEntry("Disabling hopper " + hopper.getHopperNumber());
+                        hopper.setEnabled(false);
+                        btn.setEnabled(false);
+                    } else {
+                        addLogEntry("Testing hopper " + hopper.getHopperNumber());
+                        hopper.test();
+                        try {
+                            Thread.sleep(3000);
+                            btn.setEnabled(hopper.isEnabled());
+                        } catch (InterruptedException ex) {
+
+                        }
+                    }
+                }else{
+                    String newName = renameHopperColor("Hopper " + hopper.getHopperNumber().toString(),hopper.getHopperColor());
+                    if(!newName.equals(hopper.getHopperColor())){
+                        String newColor = chooseColor(newName);
+                        if(!newColor.equals(btn.getBackground().toString())) {
+                            Settings.setSetting(hopper.getSettingNameXML() + ".name", newName);
+                            Settings.setSetting(hopper.getSettingNameXML() + ".color",newColor);
+                            btn.setBackground(Color.decode("#" + newColor));
+                            btn.setText(newName);
+                        }
                     }
                 }
-            }else{
-                String newName = renameHopperColor("Hopper " + hopper.getHopperNumber().toString(),hopper.getHopperColor());
-                if(!newName.equals(hopper.getHopperColor())){
-                    String newColor = chooseColor(newName);
-                    if(!newColor.equals(btn.getBackground().toString())) {
-                        Settings.setSetting(hopper.getSettingNameXML() + ".name", newName);
-                        Settings.setSetting(hopper.getSettingNameXML() + ".color",newColor);
-                        btn.setBackground(Color.decode("#" + newColor));
-                        btn.setText(newName);
-                    }
-                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent mouseEvent) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent mouseEvent) {
+
             }
         });
     }
@@ -638,7 +693,7 @@ public class MainScreen extends JFrame {
 
     private class HopperFunctionButton extends JButton{
         private boolean enabled;
-        private Color background;
+        private Color background = null;
         @Override
         public Color getBackground() {
             return background;
@@ -647,26 +702,37 @@ public class MainScreen extends JFrame {
         public HopperFunctionButton(String buttonText){
             setText(buttonText);
             setForeground(Color.WHITE);
-            setFont(new Font("Arial Black",Font.BOLD,55));
+            setFont(new Font("Arial Black",Font.BOLD,45));
             setBorder(new MatteBorder(6, 6, 6, 6, Color.black));
         }
         @Override
         public void setEnabled(boolean enable){
             enabled = enable;
             if(!enable) {
-                super.setBackground(Color.GRAY);
-                super.setForeground(background);
+                setForeground(background);
+                setBackground(Color.GRAY);
+                revalidate();
+                repaint();
             }else {
-                super.setBackground(background);
-                super.setForeground(Color.WHITE);
+                setBackground(background);
+                setForeground(Color.WHITE);
+                revalidate();
+                repaint();
             }
         }
         @Override
-        public boolean isEnabled(){return enabled;}
+        public boolean isEnabled(){
+            return enabled;
+        }
         @Override
         public void setBackground(Color color){
             super.setBackground(color);
-            background = color;
+            if(background == null)
+                background = color;
+        }
+        @Override
+        public void addMouseListener(MouseListener listener){
+            super.addMouseListener(listener);
         }
     }
 

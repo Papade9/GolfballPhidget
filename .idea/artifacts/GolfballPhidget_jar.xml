@@ -5,6 +5,7 @@
       <element id="archive" name="GolfballPhidget.jar">
         <element id="module-output" name="GolfballPhidget" />
       </element>
+      <element id="library" level="project" name="lib" />
     </root>
   </artifact>
 </component>

@@ -25,13 +25,19 @@ public class Hopper {
     public String getSettingNameXML(){return settingNameXML;}
 
     public void flashRing(){
-        try {
-            ringLight.setState(false);
-            Thread.sleep(500);
-            ringLight.setState(true);
-        }catch(PhidgetException | InterruptedException ex){
+        Thread flashThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ringLight.setState(false);
+                    Thread.sleep(500);
+                    ringLight.setState(true);
+                }catch(PhidgetException | InterruptedException ex){
 
-        }
+                }
+            }
+        });
+        flashThread.start();
     }
 
     public Hopper(String colorName, Integer number,String settingXMLName){
@@ -54,9 +60,9 @@ public class Hopper {
                             setEnabled(false);
                         }
                     }
-                }else if(enabled && MainScreen.getInstance().getBallCredits() > 0){
-//                    PlayAudioFile.playSound("./audio/ballout.wav");
-                    PlayAudioFile.playSound("./audio/ball-out.wav");
+                }else if(MainScreen.getInstance().getBallCredits() > 0){
+//                    PlayAudioFile.playSound("./audio/ballout.wav",true);
+                    PlayAudioFile.playSound("./audio/ball-out.wav",true);
                 }
             });
             button.open();
@@ -89,26 +95,22 @@ public class Hopper {
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {
-                    if(Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 1200L) {
+                    if(motor.getState() && Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 2000L) {
                         _lastDispenseSensor = LocalDateTime.now();
                         motor.setState(false);
+                        buttonLight.setState(true);
                         if (MainScreen.getInstance().getMode().equals(MainScreen.TEST))
                             MainScreen.getInstance().addLogEntry("Dispense Sensor " + number + " sensed");
                         MainScreen.getInstance().decrementCredits();
-                        PlayAudioFile.playSound("./audio/ball-vend.wav");
+                        MainScreen.getInstance().addLogEntry("Ball credits remaining: " + MainScreen.getInstance().getBallCredits());
+                        PlayAudioFile.playSound("./audio/ball-vend.wav",true);
                         if (MainScreen.getInstance().getBallCredits() > 0) {
-                            PlayAudioFile.playSound("./audio/youHave.wav");
-                            PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav");
-                            try{
-                                while(PlayAudioFile.isAlive()){
-                                    Thread.sleep(1);
-                                }
-                            }catch(InterruptedException ex){
-
-                            }
-                            PlayAudioFile.playSound("./audio/ballRemaining.wav");
+                            PlayAudioFile.playSound("./audio/youHave.wav",false);
+                            if(MainScreen.getInstance().getBallCredits() > 0)
+                                PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav",false);
+                            PlayAudioFile.playSound("./audio/ballRemaining.wav",false);
                         } else {
-                            PlayAudioFile.playSound("./audio/haveGreatGame.wav");
+                            PlayAudioFile.playSound("./audio/haveGreatGame.wav",false);
                         }
                         if (!enabled)
                             enabled = true;

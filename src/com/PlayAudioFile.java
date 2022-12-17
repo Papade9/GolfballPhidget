@@ -4,6 +4,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import java.io.File;
+import java.time.LocalDateTime;
 
 public class PlayAudioFile {
     private static Thread _playThread;
@@ -12,6 +13,7 @@ public class PlayAudioFile {
     private static class SoundRunnable implements Runnable{
         private Clip clip = null;
         private File file;
+        private LocalDateTime startTime = null;
 
         public SoundRunnable(){
             try {
@@ -32,8 +34,13 @@ public class PlayAudioFile {
             }
         }
 
+        public boolean isRunning(){
+            return startTime == null || clip.isRunning();
+        }
+
         @Override
         public void run() {
+            startTime = LocalDateTime.now();
             clip.start();
         }
 
@@ -43,18 +50,19 @@ public class PlayAudioFile {
         }
     }
 
-    public static boolean isAlive(){return _playThread != null && _playThread.isAlive();}
-
-    public static synchronized void playSound(final String url) {
+    public static synchronized void playSound(final String url,boolean interrupt) {
         if(_playThread == null) {
             _soundRunnable = new SoundRunnable();
             _playThread = new Thread(_soundRunnable);
             _soundRunnable.setFile(url);
             _playThread.start();
         }else{
-            while(_playThread.isAlive()) {
+            if(!interrupt) {
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep(10);
+                    while (_soundRunnable.isRunning()) {
+                        Thread.sleep(1);
+                    }
                 } catch (InterruptedException ex) {
 
                 }
