@@ -104,13 +104,13 @@ public class Hopper {
                         MainScreen.getInstance().decrementCredits();
                         MainScreen.getInstance().addLogEntry("Ball credits remaining: " + MainScreen.getInstance().getBallCredits());
                         PlayAudioFile.playSound("./audio/ball-vend.wav",true);
-                        if (MainScreen.getInstance().getBallCredits() > 0) {
+                        if (MainScreen.getInstance().getBallCredits() > 0 && MainScreen.getInstance().getBallCredits() < 15) {
                             PlayAudioFile.playSound("./audio/youHave.wav",false);
                             if(MainScreen.getInstance().getBallCredits() > 0)
                                 PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav",false);
                             PlayAudioFile.playSound("./audio/ballRemaining.wav",false);
                         } else {
-                            PlayAudioFile.playSound("./audio/haveGreatGame.wav",false);
+                            PlayAudioFile.playSound("./audio/haveGreatGame.wav",true);
                         }
                         if (!enabled)
                             enabled = true;

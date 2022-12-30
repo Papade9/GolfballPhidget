@@ -5,7 +5,7 @@ public class Main {
     private static Integer DEBUG = 2;
     private static Integer NORMAL = 0;
     public static Integer PHIDGET_TEST = 1;
-    private static String VERSION = "2022-12-15 19:19";
+    private static String VERSION = "2022-12-30 14:54";
 
     public static void main(String[] args) {
         if (args.length > 0) {
