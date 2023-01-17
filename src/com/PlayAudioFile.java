@@ -5,8 +5,6 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import java.io.File;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 
 public class PlayAudioFile {
     private static Thread _playThread;

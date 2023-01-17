@@ -4,9 +4,7 @@ import java.awt.event.*;
 import javax.swing.border.*;
 import com.db.HQuery;
 import com.db.tableclass.*;
-import com.phidget22.DigitalOutput;
-import com.phidget22.Phidget;
-import com.phidget22.PhidgetException;
+import com.phidget22.*;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -14,7 +12,6 @@ import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.Executors;
@@ -145,13 +142,20 @@ public class MainScreen extends JFrame {
                     output.setHubPort(hub);
                     output.setChannel(Integer.parseInt(dialog.getValidatedText()));
                     output.open();
-                    while(!output.getAttached())
+                    int loopcount = 0;
+                    while(!output.getAttached()) {
+                        System.out.println("Loop: " + loopcount);
                         Thread.sleep(1000);
+                        loopcount++;
+                    }
+                    output.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
                     output.setState(true);
+                    System.out.println("Output State: " + output.getState());
                 } catch (PhidgetException ex) {
+                    System.out.println("PhidgetExeption: " + ex.getMessage());
                     addLogEntry("Exception: " + ex);
                 }catch(InterruptedException ie){
-
+                    System.out.println("InterruptedExeption: " + ie.getMessage());
                 }
             }
         }

@@ -66,6 +66,7 @@ public class Hopper {
                 }
             });
             button.open();
+            System.out.println("button opened");
             dispenseSensor = new DigitalInput();
             dispenseSensor.setHubPort(0);
             dispenseSensor.setChannel(HopperConfig.getHopperConfig(number).getDispenseSensorChannel());
@@ -95,7 +96,7 @@ public class Hopper {
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {
-                    if(motor.getState() && Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 2000L) {
+                    if(!digitalInputStateChangeEvent.getState() && motor.getState() && Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 2000L) {
                         _lastDispenseSensor = LocalDateTime.now();
                         motor.setState(false);
                         buttonLight.setState(true);

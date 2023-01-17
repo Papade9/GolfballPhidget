@@ -3,15 +3,32 @@
 <properties>
 <comment>Golfland Golfball Phidget Settings</comment>
 <entry key="bottomLeft.name">Yellow</entry>
-<entry key="topLeft.color">ff0033</entry>
-<entry key="topLeft.name">Red</entry>
 <entry key="bottomRight.color">3300ff</entry>
-<entry key="topRight.name">green</entry>
 <entry key="bottomMiddle.name">purple</entry>
+<entry key="topLeft.color">ff0033</entry>
+<entry key="topRight.name">green</entry>
+<entry key="topMiddle.name">Silver</entry>
+<entry key="topLeft.name">Red</entry>
 <entry key="bottomRight.name">Blue</entry>
 <entry key="bottomMiddle.color">660099</entry>
 <entry key="topMiddle.color">ccccff</entry>
 <entry key="topRight.color">009900</entry>
-<entry key="topMiddle.name">Silver</entry>
-<entry key="bottomLeft.color">ffff00</entry>
+<entry key="bottomLeft.motor">4</entry>
+<entry key="bottomRight.motor">6</entry>
+<entry key="bottomMiddle.motor">5</entry>
+<entry key="topLeft.motor">0</entry>
+<entry key="topRight.motor">2</entry>
+<entry key="topMiddle.motor">1</entry>
+<entry key="bottomLeft.ring">17</entry>
+<entry key="bottomRight.ring">19</entry>
+<entry key="bottomMiddle.ring">18</entry>
+<entry key="topLeft.ring">8</entry>
+<entry key="topRight.ring">16</entry>
+<entry key="topMiddle.ring">9</entry>
+<entry key="bottomLeft.button">23</entry>
+<entry key="bottomRight.button">25</entry>
+<entry key="bottomMiddle.button">24</entry>
+<entry key="topLeft.button">20</entry>
+<entry key="topRight.button">22</entry>
+<entry key="topMiddle.button">21</entry>
 </properties>
