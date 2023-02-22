@@ -83,6 +83,7 @@ public class Hopper {
                     Thread.sleep(1000);
             }catch(InterruptedException ie){
             }
+            ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
             ringLight.setState(true);
             buttonLight = new DigitalOutput();
             buttonLight.setHubPort(HopperConfig.getHopperConfig(number).getButtonLightChannel()[0]);
@@ -93,6 +94,7 @@ public class Hopper {
                     Thread.sleep(1000);
             }catch(InterruptedException ie){
             }
+            buttonLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {

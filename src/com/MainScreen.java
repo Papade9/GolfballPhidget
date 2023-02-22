@@ -9,6 +9,7 @@ import com.phidget22.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ public class MainScreen extends JFrame {
     private Integer _ballCredits = 0;
     private LocalDateTime _lastButtonPressed = LocalDateTime.now();
     private ArrayList<TicketTypeEntity> _ticketTypes = new ArrayList<>();
-    private boolean _acceptETabs, _processingTicket;
+    private boolean _acceptETabs, _processingTicket, _restart;
     private String _printPath;
     private int _cashierId;
     private Integer _mode = 0;
@@ -55,6 +56,7 @@ public class MainScreen extends JFrame {
     private int _lastHopperRingFlashed, _lastHopperQuantityFlashed = 0;
     private LocalDateTime _startTime = LocalDateTime.now();
     private LocalDateTime _lastCardScan = LocalDateTime.now();
+    private Long _lastTicketProcessed = 0L;
 
     public synchronized static MainScreen getInstance(){
         if(_instance == null)
@@ -123,6 +125,12 @@ public class MainScreen extends JFrame {
             _hoppers[4] = _hopper5;
             _hoppers[5] = _hopper6;
         }else{
+            System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(1).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(1).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(1).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(1).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(1).getDispenseSensorChannel());
+            System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(2).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(2).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(2).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(2).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(2).getDispenseSensorChannel());
+            System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(3).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(3).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(3).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(3).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(3).getDispenseSensorChannel());
+            System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(4).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(4).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(4).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(4).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(4).getDispenseSensorChannel());
+            System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(5).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(5).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(5).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(5).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(5).getDispenseSensorChannel());
+            System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(6).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(6).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(6).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(6).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(6).getDispenseSensorChannel());
             DigitalOutput output = null;
             Integer hub = 0;
             CDialog dialog = new CDialog(null);
@@ -197,6 +205,13 @@ public class MainScreen extends JFrame {
                 count++;
                 if(count > 2)
                     count = 0;
+                if(count > 3 && !_restart){
+                    try {
+                        java.lang.Runtime.getRuntime().exec("java -jar /home/golf/GolfballPhidget/GolfballPhidget.jar -restart");
+                        System.exit(0);
+                    } catch (IOException ex) {
+                    }
+                }
             }
         },10000,800, TimeUnit.MILLISECONDS);
         _printPath = ((PrintPathEntity) new HQuery.selectRecord("from PrintPathEntity where id=:id", "hibernate.cfg.xml",new HQuery.HQueryTuple("id",Register.get().getRegister().getReceiptPrinterId())).query()).getPath();
@@ -231,6 +246,10 @@ public class MainScreen extends JFrame {
                 }
             }
         });
+    }
+
+    public void setRestart(boolean restart){
+        _restart = restart;
     }
 
     public void setMode(Integer mode){_mode = mode;}
@@ -331,6 +350,7 @@ public class MainScreen extends JFrame {
                                 new HQuery.update("hibernate.cfg.xml", LastUsedEntity.class).query(tempUsed);
                             }
                             _ballCredits += tempCredit.getQuantity();
+                            _lastTicketProcessed = Long.valueOf(txtInput.getText());
                             totalCreditsFound += tempCredit.getQuantity();
                             addLogEntry("BallCredits:" + _ballCredits);
                             resetRingLights();
@@ -345,9 +365,9 @@ public class MainScreen extends JFrame {
                     }
                 }
             }
-            if(totalCreditsFound == 0)
+            if(totalCreditsFound == 0 && !Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed))
                 PlayAudioFile.playSound("./audio/golfWindow.wav",false);
-        }else{
+        }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed)){
             PlayAudioFile.playSound("./audio/golfWindow.wav",false);
         }
         _processingTicket = false;
