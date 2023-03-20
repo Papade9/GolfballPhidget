@@ -309,6 +309,14 @@ public class MainScreen extends JFrame {
 //                addLogEntry("After additional: " + credits.size());
             }
         }
+        if(credits.size() == 0){ //customer scanned order number barcode on bottom of receipt instead of scorecard
+            params[1] = new HQuery.HQueryTuple("orderId",Long.valueOf(txtInput.getText()));
+            for(String redeemTicket : redeemTickets) {
+                params[0] = new HQuery.HQueryTuple("redeemTicket",Integer.valueOf(redeemTicket));
+                credits.addAll(new HQuery.select("select c from CreditEntity c left join OrdersEntity o on c.transactionId=o.transactionId where c.redeemTicketId=:redeemTicket and o.orderId=:orderId and (dateExpires is null or dateExpires>=:thisMorning)", "hibernate.cfg.xml", params).query());
+//            addLogEntry("Initial tickets found: " + credits.size());
+            }
+        }
         if(credits.size() > 0) {
             for (CreditEntity tempCredit : credits) {
                 TicketTypeEntity ticketTypefound = null;
