@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Util {
     public static final DateTimeFormatter dtfLocalTime = DateTimeFormatter.ofPattern("HH:mm");
     public static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("M/d/yyyy ");
+    public static final DateTimeFormatter dtfDateTimeLong = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static boolean isNumeric(String s) {
         return s.matches("[-+]?\\d*\\.?\\d+");

@@ -62,7 +62,7 @@ public class Hopper {
                     }
                 }else if(MainScreen.getInstance().getBallCredits() > 0){
 //                    PlayAudioFile.playSound("./audio/ballout.wav",true);
-                    PlayAudioFile.playSound("./audio/ball-out.wav",true);
+                    PlayAudioFile.playSound("./audio/ball-out.wav",true,true);
                 }
             });
             button.open();
@@ -106,14 +106,14 @@ public class Hopper {
                             MainScreen.getInstance().addLogEntry("Dispense Sensor " + number + " sensed");
                         MainScreen.getInstance().decrementCredits();
                         MainScreen.getInstance().addLogEntry("Ball credits remaining: " + MainScreen.getInstance().getBallCredits());
-                        PlayAudioFile.playSound("./audio/ball-vend.wav",true);
+                        PlayAudioFile.playSound("./audio/ball-vend.wav",true,true);
                         if (MainScreen.getInstance().getBallCredits() > 0 && MainScreen.getInstance().getBallCredits() < 15) {
-                            PlayAudioFile.playSound("./audio/youHave.wav",false);
+                            PlayAudioFile.playSound("./audio/youHave.wav",false,false);
                             if(MainScreen.getInstance().getBallCredits() > 0)
-                                PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav",false);
-                            PlayAudioFile.playSound("./audio/ballRemaining.wav",false);
+                                PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav",false,false);
+                            PlayAudioFile.playSound("./audio/ballRemaining.wav",false,false);
                         } else {
-                            PlayAudioFile.playSound("./audio/haveGreatGame.wav",true);
+                            PlayAudioFile.playSound("./audio/haveGreatGame.wav",true,true);
                         }
                         if (!enabled)
                             enabled = true;

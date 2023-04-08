@@ -12,6 +12,9 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +38,7 @@ public class MainScreen extends JFrame {
     private HopperFunctionButton _btnBottomMiddle;
     private HopperFunctionButton _btnBottomRight;
     private final ScheduledExecutorService _service = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService _heartbeatService = Executors.newSingleThreadScheduledExecutor();
     private Hopper _hopper1;
     private Hopper _hopper2;
     private Hopper _hopper3;
@@ -48,14 +52,14 @@ public class MainScreen extends JFrame {
     private boolean _acceptETabs, _processingTicket, _restart;
     private String _printPath;
     private int _cashierId;
-    private Integer _mode = 0;
+    private Integer _mode,_totalGolfballMachines = 0;
     public static final Integer PHIDGET_TEST = 1;
     public static final Integer NORMAL = 0;
     public static final Integer TEST = 2;
     private Hopper[] _hoppers = new Hopper[6];
     private int _lastHopperRingFlashed, _lastHopperQuantityFlashed = 0;
     private LocalDateTime _startTime = LocalDateTime.now();
-    private LocalDateTime _lastCardScan = LocalDateTime.now();
+    private LocalDateTime _lastCardScan,_lastHeartbeatRecorded = LocalDateTime.now();
     private Long _lastTicketProcessed = 0L;
 
     public synchronized static MainScreen getInstance(){
@@ -80,7 +84,6 @@ public class MainScreen extends JFrame {
                     _hopper4.closePorts();
                     _hopper5.closePorts();
                     _hopper6.closePorts();
-
                     try {
                         Phidget.finalize(0);
                     }catch(PhidgetException ex){
@@ -179,19 +182,42 @@ public class MainScreen extends JFrame {
                 if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L && !_processingTicket){
                     _processingTicket = true;
                     _lastCardScan = LocalDateTime.now();
-                    processTicket();
+                    if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1))
+                        processTicket();
+                    else if(_totalGolfballMachines > 1)
+                        PlayAudioFile.playSound("./audio/outOfBalls.wav", true,true);
                     txtInput.setText("");
                 }else if(e.getKeyChar() == KeyEvent.VK_ENTER && !_processingTicket && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
                     if(txtInput.getText().equals("credit")) {
-                        PlayAudioFile.playSound("./audio/golf-start.wav", false);
+                        PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
                         _ballCredits++;
                     }else {
-                        PlayAudioFile.playSound("./audio/tryAgain.wav", true);
+                        PlayAudioFile.playSound("./audio/tryAgain.wav", true,true);
                     }
                     txtInput.setText("");
                 }
             }
         });
+        _heartbeatService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                if(_lastHeartbeatRecorded.compareTo(LocalDateTime.now().minusMinutes(2)) < 0){
+                    _lastHeartbeatRecorded = LocalDateTime.now();
+                    _totalGolfballMachines = 1;
+                    ZonedDateTime zonedHeartbeat = _lastHeartbeatRecorded.atZone(ZoneId.systemDefault());
+                    ZonedDateTime azZonedHeartbeat = zonedHeartbeat.withZoneSameInstant(ZoneId.of("America/Phoenix"));
+                    Register.get().getRegister().setTimeClockDepartments(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(azZonedHeartbeat));
+                    new HQuery.update("hibernate.cfg.xml", RegisterSetupEntity.class).query(Register.get().getRegister());
+                    HQuery.HQueryTuple[] params = new HQuery.HQueryTuple[2];
+                    params[0] = new HQuery.HQueryTuple("this",Register.get().getRegister().getRegisterId());
+                    params[1] = new HQuery.HQueryTuple("four",4);
+                    ArrayList<RegisterSetupEntity> others = new HQuery.select("from RegisterSetupEntity where active=true and registerType=:four and registerId!=:this","hibernate.cfg.xml").query();
+                    for(RegisterSetupEntity register : others)
+                        if(register.getTimeClockDepartments() != null && LocalDateTime.parse(register.getTimeClockDepartments().replace('T', ' '), Util.dtfDateTimeLong).compareTo(LocalDateTime.now().minusMinutes(30).minusSeconds(30)) > 0)
+                            _totalGolfballMachines++;
+                }
+            }
+        },20,20,TimeUnit.MINUTES);
         _service.scheduleWithFixedDelay(new Runnable() {
             int count = 0;
             @Override
@@ -363,10 +389,9 @@ public class MainScreen extends JFrame {
                             addLogEntry("BallCredits:" + _ballCredits);
                             resetRingLights();
                             if (scorecardPlayers > 0 && scorecardPlayers < 4)
-                                PlayAudioFile.playSound("./audio/scanMorePlayers.wav",true);
+                                PlayAudioFile.playSound("./audio/scanMorePlayers.wav",true,false);
                             else
-                                PlayAudioFile.playSound("./audio/golf-start.wav",true);
-//                                    PlayAudioFile.playSound("./audio/chooseBall.wav",true);
+                                PlayAudioFile.playSound("./audio/golf-start.wav",true,false);
                             if (scorecardPlayers >= 4)
                                 GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers), _printPath, false);
                         }
@@ -374,9 +399,9 @@ public class MainScreen extends JFrame {
                 }
             }
             if(totalCreditsFound == 0 && !Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed))
-                PlayAudioFile.playSound("./audio/golfWindow.wav",false);
+                PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
         }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed)){
-            PlayAudioFile.playSound("./audio/golfWindow.wav",false);
+            PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
         }
         _processingTicket = false;
     }
@@ -663,6 +688,8 @@ public class MainScreen extends JFrame {
                             Settings.setSetting(hopper.getSettingNameXML() + ".color",newColor);
                             btn.setBackground(Color.decode("#" + newColor));
                             btn.setText(newName);
+                            btn.revalidate();
+                            btn.repaint();
                         }
                     }
                 }
@@ -687,6 +714,23 @@ public class MainScreen extends JFrame {
         _btnBottomLeft.setEnabled(_hopper4.isEnabled());
         _btnBottomMiddle.setEnabled(_hopper5.isEnabled());
         _btnBottomRight.setEnabled(_hopper6.isEnabled());
+    }
+
+    private int countEnabledHoppers(){
+        int count = 0;
+        if(_hopper1.isEnabled())
+            count++;
+        if(_hopper2.isEnabled())
+            count++;
+        if(_hopper3.isEnabled())
+            count++;
+        if(_hopper4.isEnabled())
+            count++;
+        if(_hopper5.isEnabled())
+            count++;
+        if(_hopper6.isEnabled())
+            count++;
+        return count;
     }
 
     private String chooseColor(String colorName){

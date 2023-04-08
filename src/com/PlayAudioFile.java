@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class PlayAudioFile {
     private static Thread _playThread;
     private static SoundRunnable _soundRunnable = null;
+    private static String _lastFilePlayed = null;
 
     private static class SoundRunnable implements Runnable{
         private Clip clip = null;
@@ -50,7 +51,7 @@ public class PlayAudioFile {
         }
     }
 
-    public static synchronized void playSound(final String url,boolean interrupt) {
+    public static synchronized void playSound(final String url,boolean interrupt,boolean repeatSame) {
         if(_playThread == null) {
             _soundRunnable = new SoundRunnable();
             _playThread = new Thread(_soundRunnable);
@@ -66,10 +67,14 @@ public class PlayAudioFile {
                 } catch (InterruptedException ex) {
 
                 }
+            }else{
+                _lastFilePlayed = url;
             }
-            _soundRunnable.stop();
-            _soundRunnable.setFile(url);
-            _soundRunnable.run();
+            if(!interrupt || _lastFilePlayed.equals(url) && repeatSame || !_lastFilePlayed.equals(url)) {
+                _soundRunnable.stop();
+                _soundRunnable.setFile(url);
+                _soundRunnable.run();
+            }
         }
 
     }
