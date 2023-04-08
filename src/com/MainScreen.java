@@ -18,10 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import javax.swing.*;
 /*
  * Created by JFormDesigner on Thu Nov 10 18:09:11 MST 2022
@@ -37,8 +34,6 @@ public class MainScreen extends JFrame {
     private HopperFunctionButton _btnBottomLeft;
     private HopperFunctionButton _btnBottomMiddle;
     private HopperFunctionButton _btnBottomRight;
-    private final ScheduledExecutorService _service = Executors.newSingleThreadScheduledExecutor();
-    private final ScheduledExecutorService _heartbeatService = Executors.newSingleThreadScheduledExecutor();
     private Hopper _hopper1;
     private Hopper _hopper2;
     private Hopper _hopper3;
@@ -52,14 +47,16 @@ public class MainScreen extends JFrame {
     private boolean _acceptETabs, _processingTicket, _restart;
     private String _printPath;
     private int _cashierId;
-    private Integer _mode,_totalGolfballMachines = 0;
+    private Integer _totalGolfballMachines = 0;
+    private Integer _mode = 0;
     public static final Integer PHIDGET_TEST = 1;
     public static final Integer NORMAL = 0;
     public static final Integer TEST = 2;
     private Hopper[] _hoppers = new Hopper[6];
     private int _lastHopperRingFlashed, _lastHopperQuantityFlashed = 0;
     private LocalDateTime _startTime = LocalDateTime.now();
-    private LocalDateTime _lastCardScan,_lastHeartbeatRecorded = LocalDateTime.now();
+    private LocalDateTime _lastHeartbeatRecorded = LocalDateTime.now().minusMinutes(10);
+    private LocalDateTime _lastCardScan = LocalDateTime.now();
     private Long _lastTicketProcessed = 0L;
 
     public synchronized static MainScreen getInstance(){
@@ -73,6 +70,8 @@ public class MainScreen extends JFrame {
     public LocalDateTime getStartTime(){return _startTime;}
 
     private MainScreen() {
+        ScheduledExecutorService _service = new ScheduledThreadPoolExecutor(1);
+        ScheduledExecutorService _heartbeatService = new ScheduledThreadPoolExecutor(1);
         initComponents();
         addWindowListener(new WindowAdapter() {
             @Override
@@ -114,7 +113,7 @@ public class MainScreen extends JFrame {
         if(Settings.getSetting("bottomRight.color","error").equals(""))
             Settings.setSetting("bottomRight.color",chooseColor(Settings.getSetting("bottomRight.name","error")));
         addUIButtons();
-        if(!_mode.equals(PHIDGET_TEST)) {
+        if(_mode.equals(NORMAL)) {
             _hopper1 = new Hopper(Settings.getSetting("topLeft.name", "error"), 1, "topLeft");
             _hopper2 = new Hopper(Settings.getSetting("topMiddle.name", "error"), 2, "topMiddle");
             _hopper3 = new Hopper(Settings.getSetting("topRight.name", "error"), 3, "topRight");
@@ -127,7 +126,7 @@ public class MainScreen extends JFrame {
             _hoppers[3] = _hopper4;
             _hoppers[4] = _hopper5;
             _hoppers[5] = _hopper6;
-        }else{
+        }else if(!_mode.equals(TEST)){
             System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(1).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(1).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(1).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(1).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(1).getDispenseSensorChannel());
             System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(2).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(2).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(2).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(2).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(2).getDispenseSensorChannel());
             System.out.println("HopperConfig1: ButtonLightChannel: " + HopperConfig.getHopperConfig(3).getButtonLightChannel() + " Motor: " + HopperConfig.getHopperConfig(3).getMotorChannel() + " Ring: " + HopperConfig.getHopperConfig(3).getRingChannel() + " Button: " +  HopperConfig.getHopperConfig(3).getButtonChannel() + " Dispense: " + HopperConfig.getHopperConfig(3).getDispenseSensorChannel());
@@ -201,45 +200,56 @@ public class MainScreen extends JFrame {
         _heartbeatService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                if(_lastHeartbeatRecorded.compareTo(LocalDateTime.now().minusMinutes(2)) < 0){
-                    _lastHeartbeatRecorded = LocalDateTime.now();
-                    _totalGolfballMachines = 1;
-                    ZonedDateTime zonedHeartbeat = _lastHeartbeatRecorded.atZone(ZoneId.systemDefault());
-                    ZonedDateTime azZonedHeartbeat = zonedHeartbeat.withZoneSameInstant(ZoneId.of("America/Phoenix"));
-                    Register.get().getRegister().setTimeClockDepartments(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(azZonedHeartbeat));
-                    new HQuery.update("hibernate.cfg.xml", RegisterSetupEntity.class).query(Register.get().getRegister());
-                    HQuery.HQueryTuple[] params = new HQuery.HQueryTuple[2];
-                    params[0] = new HQuery.HQueryTuple("this",Register.get().getRegister().getRegisterId());
-                    params[1] = new HQuery.HQueryTuple("four",4);
-                    ArrayList<RegisterSetupEntity> others = new HQuery.select("from RegisterSetupEntity where active=true and registerType=:four and registerId!=:this","hibernate.cfg.xml").query();
-                    for(RegisterSetupEntity register : others)
-                        if(register.getTimeClockDepartments() != null && LocalDateTime.parse(register.getTimeClockDepartments().replace('T', ' '), Util.dtfDateTimeLong).compareTo(LocalDateTime.now().minusMinutes(30).minusSeconds(30)) > 0)
-                            _totalGolfballMachines++;
+                try {
+                    addLogEntry("lastHearbeat: " + Register.get().getRegister().getTimeClockDepartments());
+                    if (_lastHeartbeatRecorded.compareTo(LocalDateTime.now().minusMinutes(2)) < 0) {
+                        addLogEntry("recording heartbeat");
+                        _lastHeartbeatRecorded = LocalDateTime.now();
+                        _totalGolfballMachines = 1;
+                        ZonedDateTime zonedHeartbeat = _lastHeartbeatRecorded.atZone(ZoneId.systemDefault());
+                        ZonedDateTime azZonedHeartbeat = zonedHeartbeat.withZoneSameInstant(ZoneId.of("America/Phoenix"));
+                        Register.get().getRegister().setTimeClockDepartments(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(azZonedHeartbeat));
+                        new HQuery.update("hibernate.cfg.xml", RegisterSetupEntity.class).query(Register.get().getRegister());
+                        HQuery.HQueryTuple[] params = new HQuery.HQueryTuple[2];
+                        params[0] = new HQuery.HQueryTuple("this", Register.get().getRegister().getRegisterId());
+                        params[1] = new HQuery.HQueryTuple("four", 4);
+                        ArrayList<RegisterSetupEntity> others = new HQuery.select("from RegisterSetupEntity where active=true and registerType=:four and registerId!=:this", "hibernate.cfg.xml", params).query();
+                        for (RegisterSetupEntity register : others)
+                            if (register.getTimeClockDepartments() != null && LocalDateTime.parse(register.getTimeClockDepartments().replace('T', ' '), Util.dtfDateTimeLong).compareTo(LocalDateTime.now().minusMinutes(30).minusSeconds(30)) > 0)
+                                _totalGolfballMachines++;
+
+                    }
+                } catch (Exception ex) {
+                    addLogEntry("Exception: " + ex.getMessage());
                 }
             }
-        },20,20,TimeUnit.MINUTES);
-        _service.scheduleWithFixedDelay(new Runnable() {
+        },0L,30L,TimeUnit.MINUTES);
+        _service.scheduleAtFixedRate(new Runnable() {
             int count = 0;
             @Override
             public void run() {
-                if(count == 1) {
-                    checkHoppersEnabled();
-                    txtInput.requestFocus();
-                }
-                if(_ballCredits < 1 || Duration.between(_lastButtonPressed,LocalDateTime.now()).toMillis() > 10000L)
-                    randomizeRingLights();
-                count++;
-                if(count > 2)
-                    count = 0;
-                if(count > 3 && !_restart){
-                    try {
-                        java.lang.Runtime.getRuntime().exec("java -jar /home/golf/GolfballPhidget/GolfballPhidget.jar -restart");
-                        System.exit(0);
-                    } catch (IOException ex) {
+                try {
+                    if (count == 1) {
+                        checkHoppersEnabled();
+                        txtInput.requestFocus();
                     }
+                    if (_ballCredits < 1 || Duration.between(_lastButtonPressed, LocalDateTime.now()).toMillis() > 10000L)
+                        randomizeRingLights();
+                    count++;
+                    if (count > 2)
+                        count = 0;
+                    if (count > 3 && !_restart) {
+                        try {
+                            java.lang.Runtime.getRuntime().exec("java -jar /home/golf/GolfballPhidget/GolfballPhidget.jar -restart");
+                            System.exit(0);
+                        } catch (IOException ex) {
+                        }
+                    }
+                }catch(Exception ex){
+                    addLogEntry("Exception: " + ex.getMessage());
                 }
             }
-        },10000,800, TimeUnit.MILLISECONDS);
+        },800L,10000L, TimeUnit.MILLISECONDS);
         _printPath = ((PrintPathEntity) new HQuery.selectRecord("from PrintPathEntity where id=:id", "hibernate.cfg.xml",new HQuery.HQueryTuple("id",Register.get().getRegister().getReceiptPrinterId())).query()).getPath();
         _cashierId = ((CashierEntity) new HQuery.selectRecord("from CashierEntity where profileId=:kiosk", "hibernate.cfg.xml",new HQuery.HQueryTuple("kiosk",-8183)).query()).getCashierId();
         setIconImage(new ImageIcon(MainScreen.class.getResource("/image/golfland_nreg_icon.png")).getImage());
@@ -667,7 +677,7 @@ public class MainScreen extends JFrame {
                     addLogEntry("Button " + btn.getText() + " is " + (hopper.isEnabled() ? " enabled" : "disabled"));
                     if (hopper.isEnabled()) {
                         addLogEntry("Disabling hopper " + hopper.getHopperNumber());
-                        hopper.setEnabled(false);
+                        hopper.setEnabled(false,false);
                         btn.setEnabled(false);
                     } else {
                         addLogEntry("Testing hopper " + hopper.getHopperNumber());

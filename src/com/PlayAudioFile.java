@@ -70,7 +70,7 @@ public class PlayAudioFile {
             }else{
                 _lastFilePlayed = url;
             }
-            if(!interrupt || _lastFilePlayed.equals(url) && repeatSame || !_lastFilePlayed.equals(url)) {
+            if(!interrupt || _lastFilePlayed != null && _lastFilePlayed.equals(url) && repeatSame || _lastFilePlayed != null && !_lastFilePlayed.equals(url) ||_lastFilePlayed == null) {
                 _soundRunnable.stop();
                 _soundRunnable.setFile(url);
                 _soundRunnable.run();

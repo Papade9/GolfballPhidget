@@ -57,7 +57,7 @@ public class Hopper {
                             motor.setState(true);
                             setTimeout();
                         } catch (PhidgetException mex) {
-                            setEnabled(false);
+                            setEnabled(false,false);
                         }
                     }
                 }else if(MainScreen.getInstance().getBallCredits() > 0){
@@ -121,12 +121,12 @@ public class Hopper {
                         motor.setState(false);
                     }
                 }catch(PhidgetException dex){
-                    setEnabled(false);
+                    setEnabled(false,false);
                 }
             });
             dispenseSensor.open();
         }catch(PhidgetException ex){
-            setEnabled(false);
+            setEnabled(false,false);
             //MainScreen.getInstance().addLogEntry("Phidget Error: " + ex.getMessage());
         }
     }
@@ -166,10 +166,10 @@ public class Hopper {
                 try {
                     if (motor.getState()) {
                         motor.setState(false);
-                        setEnabled(false);
+                        setEnabled(false,true);
                     }
                 }catch(PhidgetException ex){
-                    setEnabled(false);
+                    setEnabled(false,true);
                 }finally{
                     motorTimeoutThread = null;
                 }
@@ -177,7 +177,11 @@ public class Hopper {
         });
         motorTimeoutThread.start();
     }
-    public void setEnabled(boolean enable){
+    public void setEnabled(boolean enable,boolean fromTimeout){
+        if(!enable && fromTimeout) {
+            String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
+            MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), numbers[2],false);
+        }
         enabled = enable;
         try {
             buttonLight.setState(enable);
@@ -195,7 +199,7 @@ public class Hopper {
                 setTimeout();
             }
         }catch(PhidgetException ex){
-            setEnabled(false);
+            setEnabled(false,false);
             MainScreen.getInstance().addLogEntry("testPhidgetError: " + ex);
         }
     }

@@ -1,10 +1,14 @@
 package com;
 
+import com.db.HQuery;
+import com.db.tableclass.SettingsEntity;
+
 import java.io.*;
 import java.util.Properties;
 
 public class Settings {
 	private static Properties props;
+	private static Properties _NREGproperties = new Properties();
 	private static String SETTINGS_FILEPATH = null;
 	private static String SETTINGS_NAME = null;
 
@@ -105,5 +109,20 @@ public class Settings {
 	
 	public static void setFilepath(String filepath) {
 		SETTINGS_FILEPATH = filepath;
+	}
+
+	public static String getSetting(String setting){
+		if(_NREGproperties.getProperty(setting) == null)
+			loadSetting(setting);
+		if(_NREGproperties.getProperty(setting) == null)
+			return "";
+		else
+			return _NREGproperties.getProperty(setting);
+
+	}
+	private static void loadSetting(String setting){
+		SettingsEntity settingRetrieved = new HQuery.selectRecord("from SettingsEntity where name=:setting","hibernate.cfg.xml",new HQuery.HQueryTuple("setting",setting)).query();
+		if(settingRetrieved != null)
+			_NREGproperties.setProperty(settingRetrieved.getName(),settingRetrieved.getValue());
 	}
 }

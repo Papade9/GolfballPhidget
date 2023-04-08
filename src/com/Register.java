@@ -120,7 +120,7 @@ public class Register {
             String[] parts = _localhostIP.split("\\.");
             if (Util.isNumeric(parts[2])) {
                 _localhostNetId = Short.parseShort(parts[2]);
-                if (_localhostNetId == 7 || _localhostNetId == 1)    // Change for Jim's HOme and .1 for Mesa
+                if (_localhostNetId == 7 || _localhostNetId == 0 && Short.parseShort(parts[0]) == 10 && Short.parseShort(parts[1]) == 1)    // Change for Jim's HOme and .1 for Mesa
                     _localhostNetId = 51;
                 else if(_localhostNetId == 15)//Roseville home network for backend computers
                     _localhostNetId = 59;
@@ -150,9 +150,9 @@ public class Register {
         try {
             this.queryForLocationSettings();
         } catch (Exception e) {
-            MainScreen.getInstance().addLogEntry("Failed to query for location record. Exiting. (" + e.getMessage() + ")");
+            System.out.println("Failed to query for location record. Exiting. (" + e.getMessage() + ")");
             for (StackTraceElement element : e.getStackTrace())
-                MainScreen.getInstance().addLogEntry(element.toString());
+                System.out.println(element.toString());
             System.exit(1);
         }
 

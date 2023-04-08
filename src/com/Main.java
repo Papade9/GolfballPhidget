@@ -6,7 +6,7 @@ public class Main {
     private static Integer NORMAL = 0;
     public static Integer PHIDGET_TEST = 1;
     public static Boolean restart = false;
-    private static String VERSION = "2023-01-16 17:24";
+    private static String VERSION = "2023-04-07 23:35";
 
     public static void main(String[] args) {
         if (args.length > 0) {
