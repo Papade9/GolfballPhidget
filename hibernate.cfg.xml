@@ -32,6 +32,8 @@
         <mapping class="com.db.tableclass.TicketTypeEntity"/>
         <mapping class="com.db.tableclass.CashierEntity"/>
         <mapping class="com.db.tableclass.RegisterSetupEntity"/>
+        <mapping class="com.db.tableclass.SettingsEntity"/>
+        <mapping class="com.db.tableclass.OrdersEntity"/>
 
         <!-- <property name="connection.username"/> -->
         <!-- <property name="connection.password"/> -->

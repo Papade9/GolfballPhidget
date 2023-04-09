@@ -5,8 +5,6 @@ import com.twilio.exception.ApiException;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 
-import java.time.LocalDateTime;
-
 public class MessagingService {
     private static transient MessagingService _instance;
     private final String USERNAME = Settings.getSetting("Messaging_Service_Username");

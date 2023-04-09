@@ -1,5 +1,7 @@
 package com;
 
+import java.time.LocalDateTime;
+
 public class Main {
     private static Integer _mode = 0;
     private static Integer DEBUG = 2;
@@ -26,6 +28,7 @@ public class Main {
         screen.setRestart(restart);
         screen.setMode(_mode);
         screen.addLogEntry("VERSION: " + VERSION);
+        screen.addLogEntry("Start time: " + LocalDateTime.now().format(Util.dtfDateTimeLong));
         screen.setVisible(true);
     }
 }

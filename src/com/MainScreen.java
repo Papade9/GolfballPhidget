@@ -179,12 +179,13 @@ public class MainScreen extends JFrame {
             @Override
             public void keyReleased(KeyEvent e) {
                 if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L && !_processingTicket){
-                    _processingTicket = true;
                     _lastCardScan = LocalDateTime.now();
-                    if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1))
+                    if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1)) {
+                        _processingTicket = true;
                         processTicket();
-                    else if(_totalGolfballMachines > 1)
-                        PlayAudioFile.playSound("./audio/outOfBalls.wav", true,true);
+                    }else if(_totalGolfballMachines > 1) {
+                        PlayAudioFile.playSound("./audio/outOfBalls.wav", true, true);
+                    }
                     txtInput.setText("");
                 }else if(e.getKeyChar() == KeyEvent.VK_ENTER && !_processingTicket && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
                     if(txtInput.getText().equals("credit")) {
@@ -401,7 +402,7 @@ public class MainScreen extends JFrame {
                             if (scorecardPlayers > 0 && scorecardPlayers < 4)
                                 PlayAudioFile.playSound("./audio/scanMorePlayers.wav",true,false);
                             else
-                                PlayAudioFile.playSound("./audio/golf-start.wav",true,false);
+                                PlayAudioFile.playSound("./audio/golf-start.wav",true,true);
                             if (scorecardPlayers >= 4)
                                 GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers), _printPath, false);
                         }
