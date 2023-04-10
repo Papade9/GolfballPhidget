@@ -180,7 +180,7 @@ public class Hopper {
     public void setEnabled(boolean enable,boolean fromTimeout){
         if(!enable && fromTimeout) {
             String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
-            MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), numbers[2],false);
+            MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + numbers[2],false);
         }
         enabled = enable;
         try {

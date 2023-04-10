@@ -202,9 +202,7 @@ public class MainScreen extends JFrame {
             @Override
             public void run() {
                 try {
-                    addLogEntry("lastHearbeat: " + Register.get().getRegister().getTimeClockDepartments());
                     if (_lastHeartbeatRecorded.compareTo(LocalDateTime.now().minusMinutes(2)) < 0) {
-                        addLogEntry("recording heartbeat");
                         _lastHeartbeatRecorded = LocalDateTime.now();
                         _totalGolfballMachines = 1;
                         ZonedDateTime zonedHeartbeat = _lastHeartbeatRecorded.atZone(ZoneId.systemDefault());
