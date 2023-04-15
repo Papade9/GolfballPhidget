@@ -251,7 +251,7 @@ public class MainScreen extends JFrame {
         },800L,10000L, TimeUnit.MILLISECONDS);
         _printPath = ((PrintPathEntity) new HQuery.selectRecord("from PrintPathEntity where id=:id", "hibernate.cfg.xml",new HQuery.HQueryTuple("id",Register.get().getRegister().getReceiptPrinterId())).query()).getPath();
         _cashierId = ((CashierEntity) new HQuery.selectRecord("from CashierEntity where profileId=:kiosk", "hibernate.cfg.xml",new HQuery.HQueryTuple("kiosk",-8183)).query()).getCashierId();
-        setIconImage(new ImageIcon(MainScreen.class.getResource("/image/golfland_nreg_icon.png")).getImage());
+        setIconImage(new ImageIcon(MainScreen.class.getResource("/golfland_nreg_icon.png")).getImage());
 
         toggleSetup.addActionListener(new ActionListener() {
             @Override
