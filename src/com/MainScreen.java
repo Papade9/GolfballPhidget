@@ -158,6 +158,10 @@ public class MainScreen extends JFrame {
                         Thread.sleep(1000);
                         loopcount++;
                     }
+                    System.out.println("output parent idString: " + output.getParent().getPhidgetIDString());
+                    System.out.println("output idString: " + output.getPhidgetIDString());
+                    System.out.println("output deviceVersion: " + output.getDeviceVersion());
+                    System.out.println("output HubDeviceVersion: " + output.getHub().getDeviceVersion());
                     output.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
                     output.setState(true);
                     System.out.println("Output State: " + output.getState());
@@ -222,7 +226,7 @@ public class MainScreen extends JFrame {
                     addLogEntry("Exception: " + ex.getMessage());
                 }
             }
-        },0L,30L,TimeUnit.MINUTES);
+        },0L,20L,TimeUnit.MINUTES);
         _service.scheduleAtFixedRate(new Runnable() {
             int count = 0;
             @Override
@@ -235,7 +239,7 @@ public class MainScreen extends JFrame {
                     if (_ballCredits < 1 || Duration.between(_lastButtonPressed, LocalDateTime.now()).toMillis() > 10000L)
                         randomizeRingLights();
                     count++;
-                    if (count > 2)
+                    if (count > 2 && _restart)
                         count = 0;
                     if (count > 3 && !_restart) {
                         try {

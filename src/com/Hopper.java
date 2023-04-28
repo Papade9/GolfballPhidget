@@ -66,7 +66,7 @@ public class Hopper {
                 }
             });
             button.open();
-            System.out.println("button opened");
+            System.out.println("button " + number + " opened");
             dispenseSensor = new DigitalInput();
             dispenseSensor.setHubPort(0);
             dispenseSensor.setChannel(HopperConfig.getHopperConfig(number).getDispenseSensorChannel());
@@ -79,11 +79,16 @@ public class Hopper {
             ringLight.setChannel(HopperConfig.getHopperConfig(number).getRingChannel()[1]);
             ringLight.open();
             try {
-                while (!ringLight.getAttached())
+                while (!ringLight.getAttached()) {
                     Thread.sleep(1000);
+                }
             }catch(InterruptedException ie){
+                System.out.println("ring light attachment interrupted for hopper " + number);
             }
+//            System.out.println("ring Attached for " + number + " : " + ringLight.getAttached());
             ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
+//            System.out.println("ring Light voltage for " + number + " : " + ringLight.getLEDForwardVoltage());
+//            System.out.println("ring Light state for " + number + " : " + ringLight.getState());
             ringLight.setState(true);
             buttonLight = new DigitalOutput();
             buttonLight.setHubPort(HopperConfig.getHopperConfig(number).getButtonLightChannel()[0]);
@@ -126,7 +131,10 @@ public class Hopper {
             });
             dispenseSensor.open();
         }catch(PhidgetException ex){
-            setEnabled(false,false);
+            System.out.println("Hopper error: " + ex.getMessage());
+            for(StackTraceElement el : ex.getStackTrace())
+                System.out.println(el.toString());
+//            setEnabled(false,false);
             //MainScreen.getInstance().addLogEntry("Phidget Error: " + ex.getMessage());
         }
     }
