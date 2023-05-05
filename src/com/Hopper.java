@@ -86,7 +86,8 @@ public class Hopper {
                 System.out.println("ring light attachment interrupted for hopper " + number);
             }
 //            System.out.println("ring Attached for " + number + " : " + ringLight.getAttached());
-            ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
+            if(!Register.get().getRegister().getUseAsKiosk())
+                ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
 //            System.out.println("ring Light voltage for " + number + " : " + ringLight.getLEDForwardVoltage());
 //            System.out.println("ring Light state for " + number + " : " + ringLight.getState());
             ringLight.setState(true);
@@ -99,7 +100,8 @@ public class Hopper {
                     Thread.sleep(1000);
             }catch(InterruptedException ie){
             }
-            buttonLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
+            if(!Register.get().getRegister().getUseAsKiosk())
+                buttonLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {

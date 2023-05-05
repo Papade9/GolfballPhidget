@@ -8,6 +8,7 @@ public enum HopperConfig {
     Hopper5(new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.ring","1"))},10,new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.motor","1"))},4,new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.button","1"))}),
     Hopper6(new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.ring","1"))},11,new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.motor","1"))},5,new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.button","1"))});
 
+    //Following is for 1st golfball machine prototype with different Phidget output boards MGL Golfball1
     /*Hopper1(new int[]{2,2},6,new int[]{1,0},0,new int[]{4,0}),
     Hopper2(new int[]{2,3},7,new int[]{1,1},1,new int[]{4,1}),
     Hopper3(new int[]{3,0},8,new int[]{1,2},2,new int[]{4,2}),
