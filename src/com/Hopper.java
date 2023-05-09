@@ -17,6 +17,7 @@ public class Hopper {
     private Thread motorTimeoutThread;
     private String settingNameXML;
     private LocalDateTime _lastDispenseSensor = LocalDateTime.now();
+    private LocalDateTime _lastTextSent = null;
 
     public String getHopperColor(){return hopperColor;}
 
@@ -86,7 +87,7 @@ public class Hopper {
                 System.out.println("ring light attachment interrupted for hopper " + number);
             }
 //            System.out.println("ring Attached for " + number + " : " + ringLight.getAttached());
-            if(!Register.get().getRegister().getUseAsKiosk())
+            if(!Register.get().getRegister().getForceAllCCardValidate())
                 ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
 //            System.out.println("ring Light voltage for " + number + " : " + ringLight.getLEDForwardVoltage());
 //            System.out.println("ring Light state for " + number + " : " + ringLight.getState());
@@ -100,7 +101,7 @@ public class Hopper {
                     Thread.sleep(1000);
             }catch(InterruptedException ie){
             }
-            if(!Register.get().getRegister().getUseAsKiosk())
+            if(!Register.get().getRegister().getForceAllCCardValidate())
                 buttonLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
@@ -189,8 +190,11 @@ public class Hopper {
     }
     public void setEnabled(boolean enable,boolean fromTimeout){
         if(!enable && fromTimeout) {
-            String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
-            MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + numbers[2],false);
+            if(_lastTextSent == null || Duration.between(_lastTextSent,LocalDateTime.now()).getSeconds() >= 900L) {
+                String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
+                MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + numbers[2], false);
+                _lastTextSent = LocalDateTime.now();
+            }
         }
         enabled = enable;
         try {

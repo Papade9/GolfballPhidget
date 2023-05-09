@@ -162,7 +162,8 @@ public class MainScreen extends JFrame {
                     System.out.println("output idString: " + output.getPhidgetIDString());
                     System.out.println("output deviceVersion: " + output.getDeviceVersion());
                     System.out.println("output HubDeviceVersion: " + output.getHub().getDeviceVersion());
-                    output.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
+                    if(!Register.get().getRegister().getForceAllCCardValidate())
+                        output.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
                     output.setState(true);
                     System.out.println("Output State: " + output.getState());
                 } catch (PhidgetException ex) {
