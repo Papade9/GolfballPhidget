@@ -96,6 +96,7 @@ public class LocationSettingsEntity implements Cloneable{
     public String ccServerPassword;
     public String ccServerHost;
     public String badgePrintLocations;
+    public String modPhone;
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
@@ -988,6 +989,16 @@ public class LocationSettingsEntity implements Cloneable{
         this.badgePrintLocations = badgePrintLocations;
     }
 
+    @Basic
+    @Column(name = "MODPhone", length = 10)
+    public String getModPhone() {
+        return modPhone;
+    }
+
+    public void setModPhone(String modPhone) {
+        this.modPhone = modPhone;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -1135,6 +1146,8 @@ public class LocationSettingsEntity implements Cloneable{
             return false;
         if (badgePrintLocations != null ? !badgePrintLocations.equals(that.badgePrintLocations) : that.badgePrintLocations != null)
             return false;
+        if (modPhone != null ? !modPhone.equals(that.modPhone) : that.modPhone != null)
+            return false;
         return true;
     }
 
@@ -1229,6 +1242,7 @@ public class LocationSettingsEntity implements Cloneable{
         result = 31 * result + (ccServerHost != null ? ccServerHost.hashCode() : 0);
         result = 31 * result + (ccServerPassword != null ? ccServerPassword.hashCode() : 0);
         result = 31 * result + (badgePrintLocations != null ? badgePrintLocations.hashCode() : 0);
+        result = 31 * result + (modPhone != null ? modPhone.hashCode() : 0);
         return result;
     }
     @Override

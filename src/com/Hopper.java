@@ -18,6 +18,7 @@ public class Hopper {
     private String settingNameXML;
     private LocalDateTime _lastDispenseSensor = LocalDateTime.now();
     private LocalDateTime _lastTextSent = null;
+    private Integer _modTextCount = 0;
 
     public String getHopperColor(){return hopperColor;}
 
@@ -191,9 +192,17 @@ public class Hopper {
     public void setEnabled(boolean enable,boolean fromTimeout){
         if(!enable && fromTimeout) {
             if(_lastTextSent == null || Duration.between(_lastTextSent,LocalDateTime.now()).getSeconds() >= 900L) {
-                String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
-                MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + numbers[2], false);
-                _lastTextSent = LocalDateTime.now();
+                if(_modTextCount > 1) {
+                    String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
+                    MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + numbers[2], false);
+                    MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + Register.get().getLocation().getModPhone(), false);
+                    _lastTextSent = LocalDateTime.now();
+                    _modTextCount = 0;
+                }else{
+                    MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + Register.get().getLocation().getModPhone(), false);
+                    _lastTextSent = LocalDateTime.now();
+                    _modTextCount++;
+                }
             }
         }
         enabled = enable;
