@@ -183,24 +183,25 @@ public class MainScreen extends JFrame {
         txtInput.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
-                if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L && !_processingTicket){
-                    _lastCardScan = LocalDateTime.now();
-                    if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1)) {
-                        _processingTicket = true;
-                        processTicket();
-                    }else if(_totalGolfballMachines > 1) {
-                        PlayAudioFile.playSound("./audio/outOfBalls.wav", true, true);
-                    }
-                    txtInput.setText("");
-                }else if(e.getKeyChar() == KeyEvent.VK_ENTER && !_processingTicket && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
-                    if(txtInput.getText().equals("credit")) {
-                        PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
-                        _ballCredits++;
-                    }else {
-                        PlayAudioFile.playSound("./audio/tryAgain.wav", true,true);
-                    }
-                    txtInput.setText("");
+            if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L && !_processingTicket){
+                _lastCardScan = LocalDateTime.now();
+                if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1)) {
+                    _processingTicket = true;
+                    if(!processTicket())
+                        processBadgeScan();
+                }else if(_totalGolfballMachines > 1) {
+                    PlayAudioFile.playSound("./audio/outOfBalls.wav", true, true);
                 }
+                txtInput.setText("");
+            }else if(e.getKeyChar() == KeyEvent.VK_ENTER && !_processingTicket && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
+                if(txtInput.getText().equals("credit")) {
+                    PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
+                    _ballCredits++;
+                }else {
+                    PlayAudioFile.playSound("./audio/tryAgain.wav", true,true);
+                }
+                txtInput.setText("");
+            }
             }
         });
         _heartbeatService.scheduleAtFixedRate(new Runnable() {
@@ -330,7 +331,15 @@ public class MainScreen extends JFrame {
             return true;
     }
 
-    private void processTicket(){
+    private void processBadgeScan(){
+        CashierEntity cashier = new HQuery.selectRecord("from CashierEntity where badgeId=:badge","hibernate.cfg.xml",new HQuery.HQueryTuple("badge",Integer.parseInt(txtInput.getText()))).query();
+        if(cashier != null && cashier.getManager() && cashier.getSeniorSupervisor()){
+            PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
+            _ballCredits++;
+        }
+    }
+
+    private boolean processTicket(){
         ArrayList<CreditEntity> credits = new ArrayList<>();
         boolean creditFound = false;
         int totalCreditsFound = 0;
@@ -418,6 +427,7 @@ public class MainScreen extends JFrame {
             PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
         }
         _processingTicket = false;
+        return totalCreditsFound > 0;
     }
 
     private void resetRingLights(){
