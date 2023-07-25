@@ -9,15 +9,14 @@ import com.phidget22.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.font.TextAttribute;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 import java.util.concurrent.*;
 import javax.swing.*;
 /*
@@ -58,6 +57,7 @@ public class MainScreen extends JFrame {
     private LocalDateTime _lastHeartbeatRecorded = LocalDateTime.now().minusMinutes(10);
     private LocalDateTime _lastCardScan = LocalDateTime.now();
     private Long _lastTicketProcessed = 0L;
+    private ArrayList<LocalDateTime> _last10TicketProcessedTimes = new ArrayList<>();
 
     public synchronized static MainScreen getInstance(){
         if(_instance == null)
@@ -284,6 +284,20 @@ public class MainScreen extends JFrame {
                         _hopper5.test();
                     if (response.contains("hopper6"))
                         _hopper6.test();
+                }else if(toggleSetup.isSelected()){
+                    if(_acceptETabs) {
+                        btnAcceptEtab.setFont(new Font("Segoe UI", Font.PLAIN, 22));
+                        btnAcceptEtab.setText("Accept E-Tabs");
+                        btnAcceptEtab.setBackground(Color.GREEN);
+                    }else{
+                        Font font = new Font("Segoe UI", Font.PLAIN, 22);
+                        Map attributes = font.getAttributes();
+                        attributes.put(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON);
+                        btnAcceptEtab.setFont(new Font(attributes));
+                        btnAcceptEtab.setBackground(Color.RED);
+                    }
+                }else{
+                    btnAcceptEtab.setText("Clear Credits");
                 }
             }
         });
@@ -393,6 +407,15 @@ public class MainScreen extends JFrame {
                                 creditFound = false;
                         }
                         if (creditFound) {
+                            _last10TicketProcessedTimes.add(LocalDateTime.now());
+                            _last10TicketProcessedTimes.sort(new Comparator<LocalDateTime>() {
+                                @Override
+                                public int compare(LocalDateTime localDateTime, LocalDateTime t1) {
+                                    return localDateTime.compareTo(t1);
+                                }
+                            });
+                            if(_last10TicketProcessedTimes.size() > 10)
+                                _last10TicketProcessedTimes.remove(0);
                             tempCredit.dateUsed = LocalDateTime.now();
                             tempCredit.registerId = Register.get().getRegister().getRegisterId();   // This marks the credit as Scanned and not to be scanned again.
                             new HQuery.update("hibernate.cfg.xml", CreditEntity.class).query(tempCredit);
@@ -413,8 +436,10 @@ public class MainScreen extends JFrame {
                             resetRingLights();
                             if (scorecardPlayers > 0 && scorecardPlayers < 4)
                                 PlayAudioFile.playSound("./audio/scanMorePlayers.wav",true,false);
-                            else
+                            else if(getAvgTicketProcessedTime() < 72)
                                 PlayAudioFile.playSound("./audio/golf-start.wav",true,true);
+                            else
+                                dispenseBalls();
                             if (scorecardPlayers >= 4)
                                 GPrint.getInstance().PrintSimple(GolfScoreCards(scorecardPlayers), _printPath, false);
                         }
@@ -428,6 +453,25 @@ public class MainScreen extends JFrame {
         }
         _processingTicket = false;
         return totalCreditsFound > 0;
+    }
+
+    private void dispenseBalls(){
+        int hopperToUse = 0;
+        while(_ballCredits > 0){
+            if(_hoppers[hopperToUse].isEnabled()){
+                _hoppers[hopperToUse].dispense();
+            }
+        }
+    }
+
+    private Long getAvgTicketProcessedTime(){
+        Long average = 0L;
+        Duration[] durations = new Duration[_last10TicketProcessedTimes.size()-1];
+        for(int i=1;i<_last10TicketProcessedTimes.size();i++)
+            durations[i-1] = Duration.between(_last10TicketProcessedTimes.get(i-1),_last10TicketProcessedTimes.get(i));
+        for(int i=0;i<durations.length;i++)
+            average+=durations[i].getSeconds();
+        return average / durations.length;
     }
 
     private void resetRingLights(){
@@ -784,11 +828,21 @@ public class MainScreen extends JFrame {
     }
 
     private void btnAcceptEtabMouseReleased(MouseEvent e) {
-        if(_acceptETabs)
-            btnAcceptEtab.setBackground(Color.RED);
-        else
-            btnAcceptEtab.setBackground(Color.GREEN);
-        _acceptETabs = !_acceptETabs;
+        if(btnAcceptEtab.getText().equals("Clear Credits")){
+            _ballCredits = 0;
+            addLogEntry("BallCredits:" + _ballCredits);
+        }else {
+            if (_acceptETabs) {
+                Font font = new Font("Segoe UI", Font.PLAIN, 22);
+                Map attributes = font.getAttributes();
+                attributes.put(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON);
+                btnAcceptEtab.setFont(new Font(attributes));
+                btnAcceptEtab.setBackground(Color.RED);
+            } else {
+                btnAcceptEtab.setBackground(Color.GREEN);
+            }
+            _acceptETabs = !_acceptETabs;
+        }
     }
 
     private class HopperFunctionButton extends JButton{

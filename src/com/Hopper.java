@@ -42,6 +42,24 @@ public class Hopper {
         flashThread.start();
     }
 
+    public void dispense(){
+        if(enabled && MainScreen.getInstance().getBallCredits() > 0 || MainScreen.getInstance().getMode().equals(MainScreen.TEST)) {
+            if (MainScreen.getInstance().debounceTest()) {
+                if(MainScreen.getInstance().getMode().equals(MainScreen.TEST))
+                    MainScreen.getInstance().addLogEntry("Button " + hopperNumber + " pressed");
+                try {
+                    motor.setState(true);
+                    setTimeout();
+                } catch (PhidgetException mex) {
+                    setEnabled(false,false);
+                }
+            }
+        }else if(MainScreen.getInstance().getBallCredits() > 0){
+//                    PlayAudioFile.playSound("./audio/ballout.wav",true);
+            PlayAudioFile.playSound("./audio/ball-out.wav",true,true);
+        }
+    }
+
     public Hopper(String colorName, Integer number,String settingXMLName){
         hopperColor = colorName;
         hopperNumber = number;
@@ -50,23 +68,7 @@ public class Hopper {
             button = new DigitalInput();
             button.setHubPort(0);
             button.setChannel(HopperConfig.getHopperConfig(number).getButtonChannel());
-            button.addStateChangeListener(digitalInputStateChangeEvent -> {
-                if(enabled && MainScreen.getInstance().getBallCredits() > 0 || MainScreen.getInstance().getMode().equals(MainScreen.TEST)) {
-                    if (MainScreen.getInstance().debounceTest()) {
-                        if(MainScreen.getInstance().getMode().equals(MainScreen.TEST))
-                            MainScreen.getInstance().addLogEntry("Button " + number + " pressed");
-                        try {
-                            motor.setState(true);
-                            setTimeout();
-                        } catch (PhidgetException mex) {
-                            setEnabled(false,false);
-                        }
-                    }
-                }else if(MainScreen.getInstance().getBallCredits() > 0){
-//                    PlayAudioFile.playSound("./audio/ballout.wav",true);
-                    PlayAudioFile.playSound("./audio/ball-out.wav",true,true);
-                }
-            });
+            button.addStateChangeListener(digitalInputStateChangeEvent -> {dispense();});
             button.open();
             System.out.println("button " + number + " opened");
             dispenseSensor = new DigitalInput();
