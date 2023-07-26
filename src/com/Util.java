@@ -95,4 +95,16 @@ public class Util {
             throw unknownHostException;
         }
     }
+
+    public static boolean isInt(String str)
+    {
+        if(isNumeric(str)) {
+            try {
+                int d = Integer.parseInt(str);
+            } catch (NumberFormatException nfe) {
+                return false;
+            }
+            return true;
+        }else return false;
+    }
 }

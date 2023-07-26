@@ -58,6 +58,7 @@ public class MainScreen extends JFrame {
     private LocalDateTime _lastCardScan = LocalDateTime.now();
     private Long _lastTicketProcessed = 0L;
     private ArrayList<LocalDateTime> _last10TicketProcessedTimes = new ArrayList<>();
+    private LocalDateTime _lastInputKeyReleased = LocalDateTime.now();
 
     public synchronized static MainScreen getInstance(){
         if(_instance == null)
@@ -94,10 +95,8 @@ public class MainScreen extends JFrame {
         });
         Register.get().load();
         _acceptETabs = Register.get().getRegister().getAutoCompletGameSale();
-        if(!_acceptETabs)
-            btnAcceptEtab.setBackground(Color.GREEN);
-        else
-            btnAcceptEtab.setBackground(Color.RED);
+        btnAcceptEtab.setBackground(Color.GREEN);
+        btnAcceptEtab.setText("Clear Credits");
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         setSize(dim);
         if(Settings.getSetting("topLeft.color","error").equals(""))
@@ -187,8 +186,7 @@ public class MainScreen extends JFrame {
                 _lastCardScan = LocalDateTime.now();
                 if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1)) {
                     _processingTicket = true;
-                    if(!processTicket())
-                        processBadgeScan();
+                    processTicket();
                 }else if(_totalGolfballMachines > 1) {
                     PlayAudioFile.playSound("./audio/outOfBalls.wav", true, true);
                 }
@@ -202,6 +200,7 @@ public class MainScreen extends JFrame {
                 }
                 txtInput.setText("");
             }
+            _lastInputKeyReleased = LocalDateTime.now();
             }
         });
         _heartbeatService.scheduleAtFixedRate(new Runnable() {
@@ -234,27 +233,29 @@ public class MainScreen extends JFrame {
             @Override
             public void run() {
                 try {
-                    if (count == 1) {
+                    if (count == 0 || count == 10 || count == 20) {
                         checkHoppersEnabled();
                         txtInput.requestFocus();
                     }
                     if (_ballCredits < 1 || Duration.between(_lastButtonPressed, LocalDateTime.now()).toMillis() > 10000L)
                         randomizeRingLights();
                     count++;
-                    if (count > 2 && _restart)
+                    if (count > 29 && _restart)
                         count = 0;
-                    if (count > 3 && !_restart) {
+                    /*if (count > 30 && !_restart) {
                         try {
                             java.lang.Runtime.getRuntime().exec("java -jar /home/golf/GolfballPhidget/GolfballPhidget.jar -restart");
                             System.exit(0);
                         } catch (IOException ex) {
                         }
-                    }
+                    }*/
+                    if(count > 1 && Duration.between(_lastInputKeyReleased,LocalDateTime.now()).toMillis() > 100 && !_processingTicket)
+                        txtInput.setText("");
                 }catch(Exception ex){
                     addLogEntry("Exception: " + ex.getMessage());
                 }
             }
-        },800L,10000L, TimeUnit.MILLISECONDS);
+        },800L,1000L, TimeUnit.MILLISECONDS);
         _printPath = ((PrintPathEntity) new HQuery.selectRecord("from PrintPathEntity where id=:id", "hibernate.cfg.xml",new HQuery.HQueryTuple("id",Register.get().getRegister().getReceiptPrinterId())).query()).getPath();
         _cashierId = ((CashierEntity) new HQuery.selectRecord("from CashierEntity where profileId=:kiosk", "hibernate.cfg.xml",new HQuery.HQueryTuple("kiosk",-8183)).query()).getCashierId();
         setIconImage(new ImageIcon(MainScreen.class.getResource("/image/golfland_nreg_icon.png")).getImage());
@@ -287,7 +288,6 @@ public class MainScreen extends JFrame {
                 }else if(toggleSetup.isSelected()){
                     if(_acceptETabs) {
                         btnAcceptEtab.setFont(new Font("Segoe UI", Font.PLAIN, 22));
-                        btnAcceptEtab.setText("Accept E-Tabs");
                         btnAcceptEtab.setBackground(Color.GREEN);
                     }else{
                         Font font = new Font("Segoe UI", Font.PLAIN, 22);
@@ -296,6 +296,7 @@ public class MainScreen extends JFrame {
                         btnAcceptEtab.setFont(new Font(attributes));
                         btnAcceptEtab.setBackground(Color.RED);
                     }
+                    btnAcceptEtab.setText("Accept E-Tabs");
                 }else{
                     btnAcceptEtab.setText("Clear Credits");
                 }
@@ -345,12 +346,15 @@ public class MainScreen extends JFrame {
             return true;
     }
 
-    private void processBadgeScan(){
-        CashierEntity cashier = new HQuery.selectRecord("from CashierEntity where badgeId=:badge","hibernate.cfg.xml",new HQuery.HQueryTuple("badge",Integer.parseInt(txtInput.getText()))).query();
+    private boolean processBadgeScan(){
+        CashierEntity cashier = new HQuery.selectRecord("from CashierEntity where gameCardBarcode=:badge","hibernate.cfg.xml",new HQuery.HQueryTuple("badge",String.valueOf(Integer.parseInt(txtInput.getText())))).query();
         if(cashier != null && cashier.getManager() && cashier.getSeniorSupervisor()){
             PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
             _ballCredits++;
+            addLogEntry("BallCredits:" + _ballCredits);
+            return true;
         }
+        return false;
     }
 
     private boolean processTicket(){
@@ -436,7 +440,7 @@ public class MainScreen extends JFrame {
                             resetRingLights();
                             if (scorecardPlayers > 0 && scorecardPlayers < 4)
                                 PlayAudioFile.playSound("./audio/scanMorePlayers.wav",true,false);
-                            else if(getAvgTicketProcessedTime() < 72)
+                            else if(_last10TicketProcessedTimes.size() < 10 || getAvgTicketProcessedTime() > 72)
                                 PlayAudioFile.playSound("./audio/golf-start.wav",true,true);
                             else
                                 dispenseBalls();
@@ -446,10 +450,12 @@ public class MainScreen extends JFrame {
                     }
                 }
             }
-            if(totalCreditsFound == 0 && !Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed))
+            if(totalCreditsFound == 0 && !Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed) && Util.isInt(txtInput.getText()))
+                if(!processBadgeScan())
+                    PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
+        }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed) && Util.isInt(txtInput.getText())){
+            if(!processBadgeScan())
                 PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
-        }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed)){
-            PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
         }
         _processingTicket = false;
         return totalCreditsFound > 0;
@@ -840,6 +846,7 @@ public class MainScreen extends JFrame {
                 btnAcceptEtab.setBackground(Color.RED);
             } else {
                 btnAcceptEtab.setBackground(Color.GREEN);
+                btnAcceptEtab.setFont(new Font("Segoe UI", Font.PLAIN, 22));
             }
             _acceptETabs = !_acceptETabs;
         }
