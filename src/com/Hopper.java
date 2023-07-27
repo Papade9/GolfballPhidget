@@ -60,6 +60,14 @@ public class Hopper {
         }
     }
 
+    public boolean motorRunning(){
+        try {
+            return motor.getState();
+        }catch(PhidgetException ex){
+            return false;
+        }
+    }
+
     public Hopper(String colorName, Integer number,String settingXMLName){
         hopperColor = colorName;
         hopperNumber = number;
@@ -109,7 +117,7 @@ public class Hopper {
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {
-                    if(!digitalInputStateChangeEvent.getState() && motor.getState() && Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 2000L) {
+                    if(!digitalInputStateChangeEvent.getState() && motor.getState() && Duration.between(MainScreen.getInstance().getStartTime(), LocalDateTime.now()).toMillis() > 10000L && Duration.between(_lastDispenseSensor,LocalDateTime.now()).toMillis() > 700L) {
                         _lastDispenseSensor = LocalDateTime.now();
                         motor.setState(false);
                         buttonLight.setState(true);
@@ -119,11 +127,13 @@ public class Hopper {
                         MainScreen.getInstance().addLogEntry("Ball credits remaining: " + MainScreen.getInstance().getBallCredits());
                         PlayAudioFile.playSound("./audio/ball-vend.wav",true,true);
                         if (MainScreen.getInstance().getBallCredits() > 0 && MainScreen.getInstance().getBallCredits() < 15) {
-                            PlayAudioFile.playSound("./audio/youHave.wav",false,false);
-                            if(MainScreen.getInstance().getBallCredits() > 0)
-                                PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav",false,false);
-                            PlayAudioFile.playSound("./audio/ballRemaining.wav",false,false);
-                        } else {
+                            if(!MainScreen.getInstance().highVolumeMode()) {
+                                PlayAudioFile.playSound("./audio/youHave.wav", false, false);
+                                if (MainScreen.getInstance().getBallCredits() > 0)
+                                    PlayAudioFile.playSound("./audio/" + MainScreen.getInstance().getBallCredits() + ".wav", false, false);
+                                PlayAudioFile.playSound("./audio/ballRemaining.wav", false, false);
+                            }
+                        } else if(MainScreen.getInstance().getBallCredits() == 0){
                             PlayAudioFile.playSound("./audio/haveGreatGame.wav",true,true);
                         }
                         if (!enabled)
