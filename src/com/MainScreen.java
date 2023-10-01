@@ -76,20 +76,20 @@ public class MainScreen extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if(!_mode.equals(PHIDGET_TEST)) {
-                    _hopper1.closePorts();
-                    _hopper2.closePorts();
-                    _hopper3.closePorts();
-                    _hopper4.closePorts();
-                    _hopper5.closePorts();
-                    _hopper6.closePorts();
-                    try {
-                        Phidget.finalize(0);
-                    }catch(PhidgetException ex){
+            if(!_mode.equals(PHIDGET_TEST)) {
+                _hopper1.closePorts();
+                _hopper2.closePorts();
+                _hopper3.closePorts();
+                _hopper4.closePorts();
+                _hopper5.closePorts();
+                _hopper6.closePorts();
+                try {
+                    Phidget.finalize(0);
+                }catch(PhidgetException ex){
 
-                    }
-                    System.exit(0);
                 }
+                System.exit(0);
+            }
             }
         });
         Register.get().load();
@@ -183,20 +183,26 @@ public class MainScreen extends JFrame {
             public void keyReleased(KeyEvent e) {
             if(e.getKeyChar() == KeyEvent.VK_ENTER && Util.isLong(txtInput.getText()) && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L && !_processingTicket){
                 _lastCardScan = LocalDateTime.now();
-                if(countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1)) {
+                if (countEnabledHoppers() > 1 || _totalGolfballMachines.equals(1)) {
                     _processingTicket = true;
                     processTicket();
-                }else if(_totalGolfballMachines > 1) {
+                } else if (_totalGolfballMachines > 1) {
                     PlayAudioFile.playSound("./audio/outOfBalls.wav", true, true);
                 }
                 txtInput.setText("");
             }else if(e.getKeyChar() == KeyEvent.VK_ENTER && !_processingTicket && Duration.between(_lastCardScan,LocalDateTime.now()).toMillis() > 2000L){
-                if(txtInput.getText().equals("credit")) {
-                    PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
-                    _ballCredits++;
+                if(txtInput.getText().equals("TestNotify")) {
+                    MessagingService.getInstance().sendPuttsNotification("Golfball Machine", " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), false, true, new String[]{"CART05"});
                 }else {
-                    PlayAudioFile.playSound("./audio/tryAgain.wav", true,true);
+                    if (txtInput.getText().equals("credit")) {
+                        PlayAudioFile.playSound("./audio/golf-start.wav", false, false);
+                        _ballCredits++;
+                    } else {
+                        PlayAudioFile.playSound("./audio/tryAgain.wav", true, true);
+                    }
                 }
+                txtInput.setText("");
+            }else if(Duration.between(_lastInputKeyReleased, LocalDateTime.now()).getSeconds() > 2L){
                 txtInput.setText("");
             }
             _lastInputKeyReleased = LocalDateTime.now();

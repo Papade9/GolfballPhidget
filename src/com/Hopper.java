@@ -209,11 +209,12 @@ public class Hopper {
                 if(_modTextCount > 1) {
                     String[] numbers = Register.get().getLocation().getTheftNotifyPhones().split(",");
                     MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + numbers[2], false);
-                    MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + Register.get().getLocation().getModPhone(), false);
+                    MessagingService.getInstance().sendPuttsNotification("Golfball Machine",getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(),true,true,null);
                     _lastTextSent = LocalDateTime.now();
                     _modTextCount = 0;
                 }else{
-                    MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + Register.get().getLocation().getModPhone(), false);
+                    if(!MessagingService.getInstance().sendPuttsNotification("Golfball Machine",getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(),true,true,null))
+                        MessagingService.getInstance().sendSMS(getHopperColor() + " golfballs are out in " + Register.get().getRegister().getRegisterShortName().trim(), "+1" + Register.get().getLocation().getModPhone(), false);
                     _lastTextSent = LocalDateTime.now();
                     _modTextCount++;
                 }

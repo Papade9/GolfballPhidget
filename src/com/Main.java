@@ -8,7 +8,7 @@ public class Main {
     private static Integer NORMAL = 0;
     public static Integer PHIDGET_TEST = 1;
     public static Boolean restart = false;
-    private static String VERSION = "2023-07-26 21:59";
+    private static String VERSION = "2023-09-30 21:32";
 
     public static void main(String[] args) {
         if (args.length > 0) {
