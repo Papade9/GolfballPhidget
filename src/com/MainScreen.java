@@ -446,22 +446,26 @@ public class MainScreen extends JFrame {
             addLogEntry("BallCreditsAdded:" + totalCreditsFound);
             addLogEntry("TotalBallCredits:" + _ballCredits);
             if(totalCreditsFound > 0) {
-                _lastTicketProcessed = Long.valueOf(txtInput.getText());
-                _last10TicketProcessedTimes.add(LocalDateTime.now());
-                _last10TicketProcessedTimes.sort(new Comparator<LocalDateTime>() {
-                    @Override
-                    public int compare(LocalDateTime localDateTime, LocalDateTime t1) {
-                        return localDateTime.compareTo(t1);
-                    }
-                });
-                if (_last10TicketProcessedTimes.size() > 10)
-                    _last10TicketProcessedTimes.remove(0);
-                if (_last10TicketProcessedTimes.size() < 10 || getAvgTicketProcessedTime() > 72) {
-                    PlayAudioFile.playSound("./audio/golf-start.wav", true, true);
-                    _highVolumeMode = false;
-                }else {
-                    _highVolumeMode = true;
+                if(_ballCredits.equals(getActiveHopperCount())) {
                     dispenseBalls();
+                }else{
+                    _lastTicketProcessed = Long.valueOf(txtInput.getText());
+                    _last10TicketProcessedTimes.add(LocalDateTime.now());
+                    _last10TicketProcessedTimes.sort(new Comparator<LocalDateTime>() {
+                        @Override
+                        public int compare(LocalDateTime localDateTime, LocalDateTime t1) {
+                            return localDateTime.compareTo(t1);
+                        }
+                    });
+                    if (_last10TicketProcessedTimes.size() > 10)
+                        _last10TicketProcessedTimes.remove(0);
+                    if (_last10TicketProcessedTimes.size() < 10 || getAvgTicketProcessedTime() > 72) {
+                        PlayAudioFile.playSound("./audio/golf-start.wav", true, true);
+                        _highVolumeMode = false;
+                    } else {
+                        _highVolumeMode = true;
+                        dispenseBalls();
+                    }
                 }
             }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed) && Util.isInt(txtInput.getText()))
                 if(!processBadgeScan())
@@ -472,6 +476,14 @@ public class MainScreen extends JFrame {
         }
         _processingTicket = false;
         return totalCreditsFound > 0;
+    }
+
+    public int getActiveHopperCount(){
+        int activeHoppers = 0;
+        for(Hopper h : _hoppers)
+            if(h.isEnabled())
+                activeHoppers++;
+        return activeHoppers;
     }
 
     public boolean highVolumeMode(){
