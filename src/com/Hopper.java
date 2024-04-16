@@ -140,9 +140,8 @@ public class Hopper {
                             enabled = true;
                     }else if(motor.getState()){
                         motor.setState(false);
-                    }else{
-                        MainScreen.getInstance().addLogEntry("Dispense sensor Hopper " + getHopperColor());
                     }
+                    MainScreen.getInstance().sensorState(getHopperNumber(),digitalInputStateChangeEvent.getState());
                 }catch(PhidgetException dex){
                     setEnabled(false,false);
                 }

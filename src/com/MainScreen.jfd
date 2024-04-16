@@ -1,4 +1,4 @@
-JFDML JFormDesigner: "7.0.7.0.1134" Java: "11.0.5" encoding: "UTF-8"
+JFDML JFormDesigner: "8.2.2.0.382" Java: "17.0.10" encoding: "UTF-8"
 
 new FormModel {
 	contentType: "form/swing"
@@ -48,7 +48,75 @@ new FormModel {
 				} )
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 3
-				"gridwidth": 3
+				"gridwidth": 2
+			} )
+			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class java.awt.GridBagLayout ) {
+				"$columnSpecs": "0, 0, 0"
+				"$rowSpecs": "0, 0"
+				"$hGap": 5
+				"$vGap": 5
+				"$alignLeft": true
+				"$alignTop": true
+			} ) {
+				name: "panelSensors"
+				add( new FormComponent( "javax.swing.JRadioButton" ) {
+					name: "radio1"
+					"text": "text"
+					"font": &Font0 new java.awt.Font( "Segoe UI", 0, 36 )
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+					"weightx": 1.0
+					"weighty": 1.0
+				} )
+				add( new FormComponent( "javax.swing.JRadioButton" ) {
+					name: "radio2"
+					"text": "text"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+					"gridx": 1
+					"weightx": 1.0
+					"weighty": 1.0
+				} )
+				add( new FormComponent( "javax.swing.JRadioButton" ) {
+					name: "radio3"
+					"text": "text"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+					"gridx": 2
+					"weightx": 1.0
+					"weighty": 1.0
+				} )
+				add( new FormComponent( "javax.swing.JRadioButton" ) {
+					name: "radio4"
+					"text": "text"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+					"gridy": 1
+					"weightx": 1.0
+					"weighty": 1.0
+				} )
+				add( new FormComponent( "javax.swing.JRadioButton" ) {
+					name: "radio5"
+					"text": "text"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+					"gridx": 1
+					"gridy": 1
+					"weightx": 1.0
+					"weighty": 1.0
+				} )
+				add( new FormComponent( "javax.swing.JRadioButton" ) {
+					name: "radio6"
+					"text": "text"
+					"font": #Font0
+				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+					"gridx": 2
+					"gridy": 1
+					"weightx": 1.0
+					"weighty": 1.0
+				} )
+			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
+				"gridx": 2
+				"gridy": 3
 			} )
 		}, new FormLayoutConstraints( null ) {
 			"location": new java.awt.Point( 0, 0 )

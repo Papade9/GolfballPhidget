@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact build-on-make="true" name="GolfballPhidget:jar">
+  <artifact name="GolfballPhidget:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/GolfballPhidget_jar</output-path>
     <root id="root">
       <element id="archive" name="GolfballPhidget.jar">

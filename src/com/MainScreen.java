@@ -56,7 +56,7 @@ public class MainScreen extends JFrame {
     private LocalDateTime _lastHeartbeatRecorded = LocalDateTime.now().minusMinutes(10);
     private LocalDateTime _lastCardScan = LocalDateTime.now();
     private Long _lastTicketProcessed = 0L;
-    private ArrayList<LocalDateTime> _last10TicketProcessedTimes = new ArrayList<>();
+    private ArrayList<TicketScan> _last10TicketsProcessed = new ArrayList<>();
     private LocalDateTime _lastInputKeyReleased = LocalDateTime.now();
 
     public synchronized static MainScreen getInstance(){
@@ -312,6 +312,28 @@ public class MainScreen extends JFrame {
         });
     }
 
+    public void sensorState(int hopper, boolean state){
+        switch(hopper){
+            case 1:
+                radio1.setSelected(state);
+                break;
+            case 2:
+                radio2.setSelected(state);
+                break;
+            case 3:
+                radio3.setSelected(state);
+                break;
+            case 4:
+                radio4.setSelected(state);
+                break;
+            case 5:
+                radio5.setSelected(state);
+                break;
+            case 6:
+                radio6.setSelected(state);
+        }
+    }
+
     public void setRestart(boolean restart){
         _restart = restart;
     }
@@ -449,17 +471,17 @@ public class MainScreen extends JFrame {
                 if(_ballCredits.equals(getActiveHopperCount())) {
                     dispenseBalls();
                 }else{
-                    _lastTicketProcessed = Long.valueOf(txtInput.getText());
-                    _last10TicketProcessedTimes.add(LocalDateTime.now());
-                    _last10TicketProcessedTimes.sort(new Comparator<LocalDateTime>() {
+
+                    _last10TicketsProcessed.add(new TicketScan(Long.valueOf(txtInput.getText())));
+                    _last10TicketsProcessed.sort(new Comparator<TicketScan>() {
                         @Override
-                        public int compare(LocalDateTime localDateTime, LocalDateTime t1) {
-                            return localDateTime.compareTo(t1);
+                        public int compare(TicketScan ticketScan, TicketScan t1) {
+                            return ticketScan.compareTo(t1);
                         }
                     });
-                    if (_last10TicketProcessedTimes.size() > 10)
-                        _last10TicketProcessedTimes.remove(0);
-                    if (_last10TicketProcessedTimes.size() < 10 || getAvgTicketProcessedTime() > 72) {
+                    if (_last10TicketsProcessed.size() > 10)
+                        _last10TicketsProcessed.remove(0);
+                    if (_last10TicketsProcessed.size() < 10 || getAvgTicketProcessedTime() > 72) {
                         PlayAudioFile.playSound("./audio/golf-start.wav", true, true);
                         _highVolumeMode = false;
                     } else {
@@ -467,13 +489,18 @@ public class MainScreen extends JFrame {
                         dispenseBalls();
                     }
                 }
-            }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed) && Util.isInt(txtInput.getText()))
-                if(!processBadgeScan())
-                    PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
+            }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed) && Util.isInt(txtInput.getText())) {
+                if (!processBadgeScan())
+                    PlayAudioFile.playSound("./audio/tryAgain.wav", true, true);
+            }else{
+                if (!processBadgeScan())
+                    PlayAudioFile.playSound("./audio/golfWindow.wav", false, false);
+            }
         }else if(!Long.valueOf(txtInput.getText()).equals(_lastTicketProcessed) && Util.isInt(txtInput.getText())){
             if(!processBadgeScan())
                 PlayAudioFile.playSound("./audio/golfWindow.wav",false,false);
         }
+        _lastTicketProcessed = Long.valueOf(txtInput.getText());
         _processingTicket = false;
         return totalCreditsFound > 0;
     }
@@ -511,9 +538,9 @@ public class MainScreen extends JFrame {
 
     private Long getAvgTicketProcessedTime(){
         Long average = 0L;
-        Duration[] durations = new Duration[_last10TicketProcessedTimes.size()-1];
-        for(int i=1;i<_last10TicketProcessedTimes.size();i++)
-            durations[i-1] = Duration.between(_last10TicketProcessedTimes.get(i-1),_last10TicketProcessedTimes.get(i));
+        Duration[] durations = new Duration[_last10TicketsProcessed.size()-1];
+        for(int i = 1; i< _last10TicketsProcessed.size(); i++)
+            durations[i-1] = Duration.between(_last10TicketsProcessed.get(i-1).getScanTime(), _last10TicketsProcessed.get(i).getScanTime());
         for(int i=0;i<durations.length;i++)
             average+=durations[i].getSeconds();
         return average / durations.length;
@@ -581,6 +608,43 @@ public class MainScreen extends JFrame {
             golfcards.append(PrintScoreCard( 1, cardCount, totalCards));
         }
         return golfcards.toString();
+    }
+
+    private class TicketScan implements Comparable<TicketScan>{
+        private LocalDateTime scanTime;
+        private Long ticketNumber;
+
+        public LocalDateTime getScanTime() {
+            return scanTime;
+        }
+
+        public Long getTicketNumber() {
+            return ticketNumber;
+        }
+
+        public TicketScan(Long ticketNum){
+            this.ticketNumber = ticketNum;
+            scanTime = LocalDateTime.now();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TicketScan that = (TicketScan) o;
+            return scanTime.equals(that.scanTime) &&
+                    ticketNumber.equals(that.ticketNumber);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(scanTime, ticketNumber);
+        }
+
+        @Override
+        public int compareTo(TicketScan tkt){
+            return this.scanTime.compareTo(tkt.scanTime);
+        }
     }
 
     private String PrintScoreCard(int CardType, int CardCount, int TotalCards) {
@@ -713,6 +777,12 @@ public class MainScreen extends JFrame {
         _btnBottomLeft.setBackground(Color.decode("#" + Settings.getSetting("bottomLeft.color","FFFAAD")));
         _btnBottomMiddle.setBackground(Color.decode("#" + Settings.getSetting("bottomMiddle.color","FFFAAD")));
         _btnBottomRight.setBackground(Color.decode("#" + Settings.getSetting("bottomRight.color","FFFAAD")));
+        radio1.setText(Settings.getSetting("topLeft.name","error"));
+        radio2.setText(Settings.getSetting("topMiddle.name","error"));
+        radio3.setText(Settings.getSetting("topRight.name","error"));
+        radio4.setText(Settings.getSetting("bottomLeft.name","error"));
+        radio5.setText(Settings.getSetting("bottomMiddle.name","error"));
+        radio6.setText(Settings.getSetting("bottomRight.name","error"));
         GridBagConstraints con = new GridBagConstraints();
         con.gridx = 0;
         con.gridy = 0;
@@ -943,6 +1013,13 @@ public class MainScreen extends JFrame {
         btnAcceptEtab = new JButton();
         scrollPane1 = new JScrollPane();
         txtOutput = new JTextArea();
+        panelSensors = new JPanel();
+        radio1 = new JRadioButton();
+        radio2 = new JRadioButton();
+        radio3 = new JRadioButton();
+        radio4 = new JRadioButton();
+        radio5 = new JRadioButton();
+        radio6 = new JRadioButton();
 
         //======== this ========
         setTitle("Golfland Golfball Machine");
@@ -955,8 +1032,8 @@ public class MainScreen extends JFrame {
 
         //---- toggleSetup ----
         toggleSetup.setText("Setup");
-        toggleSetup.setBackground(new Color(51, 0, 0));
-        toggleSetup.setForeground(new Color(255, 204, 102));
+        toggleSetup.setBackground(new Color(0x330000));
+        toggleSetup.setForeground(new Color(0xffcc66));
         toggleSetup.setFont(new Font("Segoe UI", Font.PLAIN, 22));
         toggleSetup.setBorder(new SoftBevelBorder(SoftBevelBorder.RAISED, Color.red, Color.red, Color.red, Color.red));
         contentPane.add(toggleSetup, new GridBagConstraints(0, 2, 1, 1, 0.0, 0.0,
@@ -988,7 +1065,61 @@ public class MainScreen extends JFrame {
         {
             scrollPane1.setViewportView(txtOutput);
         }
-        contentPane.add(scrollPane1, new GridBagConstraints(0, 3, 3, 1, 0.0, 0.0,
+        contentPane.add(scrollPane1, new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0,
+            GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+            new Insets(0, 0, 0, 5), 0, 0));
+
+        //======== panelSensors ========
+        {
+            panelSensors.setLayout(new GridBagLayout());
+            ((GridBagLayout)panelSensors.getLayout()).columnWidths = new int[] {0, 0, 0, 0};
+            ((GridBagLayout)panelSensors.getLayout()).rowHeights = new int[] {0, 0, 0};
+            ((GridBagLayout)panelSensors.getLayout()).columnWeights = new double[] {0.0, 0.0, 0.0, 1.0E-4};
+            ((GridBagLayout)panelSensors.getLayout()).rowWeights = new double[] {0.0, 0.0, 1.0E-4};
+
+            //---- radio1 ----
+            radio1.setText("text");
+            radio1.setFont(new Font("Segoe UI", Font.PLAIN, 36));
+            panelSensors.add(radio1, new GridBagConstraints(0, 0, 1, 1, 1.0, 1.0,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 5, 5), 0, 0));
+
+            //---- radio2 ----
+            radio2.setText("text");
+            radio2.setFont(new Font("Segoe UI", Font.PLAIN, 36));
+            panelSensors.add(radio2, new GridBagConstraints(1, 0, 1, 1, 1.0, 1.0,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 5, 5), 0, 0));
+
+            //---- radio3 ----
+            radio3.setText("text");
+            radio3.setFont(new Font("Segoe UI", Font.PLAIN, 36));
+            panelSensors.add(radio3, new GridBagConstraints(2, 0, 1, 1, 1.0, 1.0,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 5, 0), 0, 0));
+
+            //---- radio4 ----
+            radio4.setText("text");
+            radio4.setFont(new Font("Segoe UI", Font.PLAIN, 36));
+            panelSensors.add(radio4, new GridBagConstraints(0, 1, 1, 1, 1.0, 1.0,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 0, 5), 0, 0));
+
+            //---- radio5 ----
+            radio5.setText("text");
+            radio5.setFont(new Font("Segoe UI", Font.PLAIN, 36));
+            panelSensors.add(radio5, new GridBagConstraints(1, 1, 1, 1, 1.0, 1.0,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 0, 5), 0, 0));
+
+            //---- radio6 ----
+            radio6.setText("text");
+            radio6.setFont(new Font("Segoe UI", Font.PLAIN, 36));
+            panelSensors.add(radio6, new GridBagConstraints(2, 1, 1, 1, 1.0, 1.0,
+                GridBagConstraints.CENTER, GridBagConstraints.BOTH,
+                new Insets(0, 0, 0, 0), 0, 0));
+        }
+        contentPane.add(panelSensors, new GridBagConstraints(2, 3, 1, 1, 0.0, 0.0,
             GridBagConstraints.CENTER, GridBagConstraints.BOTH,
             new Insets(0, 0, 0, 0), 0, 0));
         pack();
@@ -1002,5 +1133,12 @@ public class MainScreen extends JFrame {
     private JButton btnAcceptEtab;
     private JScrollPane scrollPane1;
     private JTextArea txtOutput;
+    private JPanel panelSensors;
+    private JRadioButton radio1;
+    private JRadioButton radio2;
+    private JRadioButton radio3;
+    private JRadioButton radio4;
+    private JRadioButton radio5;
+    private JRadioButton radio6;
     // JFormDesigner - End of variables declaration  //GEN-END:variables  @formatter:on
 }
