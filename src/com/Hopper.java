@@ -13,6 +13,7 @@ public class Hopper {
     private String hopperColor;
     private DigitalOutput ringLight;
     private DigitalOutput buttonLight;
+    private DigitalOutput agitator;
     private boolean enabled = true;
     private Thread motorTimeoutThread;
     private String settingNameXML;
@@ -42,20 +43,19 @@ public class Hopper {
         flashThread.start();
     }
 
-    public void dispense(){
+    public void dispense(boolean agitated){
         if(enabled && MainScreen.getInstance().getBallCredits() > 0 || MainScreen.getInstance().getMode().equals(MainScreen.TEST)) {
             if (MainScreen.getInstance().debounceTest()) {
                 if(MainScreen.getInstance().getMode().equals(MainScreen.TEST))
                     MainScreen.getInstance().addLogEntry("Button " + hopperNumber + " pressed");
                 try {
                     motor.setState(true);
-                    setTimeout();
+                    setTimeout(agitated);
                 } catch (PhidgetException mex) {
                     setEnabled(false,false);
                 }
             }
         }else if(MainScreen.getInstance().getBallCredits() > 0){
-//                    PlayAudioFile.playSound("./audio/ballout.wav",true);
             PlayAudioFile.playSound("./audio/ball-out.wav",true,true);
         }
     }
@@ -76,7 +76,7 @@ public class Hopper {
             button = new DigitalInput();
             button.setHubPort(0);
             button.setChannel(HopperConfig.getHopperConfig(number).getButtonChannel());
-            button.addStateChangeListener(digitalInputStateChangeEvent -> {dispense();});
+            button.addStateChangeListener(digitalInputStateChangeEvent -> {dispense(Register.get().getRegister().getForceAllCCardValidate());});
             button.open();
             System.out.println("button " + number + " opened");
             dispenseSensor = new DigitalInput();
@@ -86,6 +86,12 @@ public class Hopper {
             motor.setHubPort(HopperConfig.getHopperConfig(number).getMotorChannel()[0]);
             motor.setChannel(HopperConfig.getHopperConfig(number).getMotorChannel()[1]);
             motor.open();
+            if(!Register.get().getRegister().getForceAllCCardValidate()) {
+                agitator = new DigitalOutput();
+                agitator.setHubPort(HopperConfig.getHopperConfig(number).getAgitatorChannel()[0]);
+                agitator.setChannel(HopperConfig.getHopperConfig(number).getAgitatorChannel()[1]);
+                agitator.open();
+            }
             ringLight = new DigitalOutput();
             ringLight.setHubPort(HopperConfig.getHopperConfig(number).getRingChannel()[0]);
             ringLight.setChannel(HopperConfig.getHopperConfig(number).getRingChannel()[1]);
@@ -98,8 +104,7 @@ public class Hopper {
                 System.out.println("ring light attachment interrupted for hopper " + number);
             }
 //            System.out.println("ring Attached for " + number + " : " + ringLight.getAttached());
-            if(!Register.get().getRegister().getForceAllCCardValidate())
-                ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
+            ringLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
 //            System.out.println("ring Light voltage for " + number + " : " + ringLight.getLEDForwardVoltage());
 //            System.out.println("ring Light state for " + number + " : " + ringLight.getState());
             ringLight.setState(true);
@@ -112,8 +117,7 @@ public class Hopper {
                     Thread.sleep(1000);
             }catch(InterruptedException ie){
             }
-            if(!Register.get().getRegister().getForceAllCCardValidate())
-                buttonLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
+            buttonLight.setLEDForwardVoltage(LEDForwardVoltage.VOLTS_5_6);
             buttonLight.setState(true);
             dispenseSensor.addStateChangeListener(digitalInputStateChangeEvent -> {
                 try {
@@ -181,7 +185,7 @@ public class Hopper {
         }
     }
 
-    private void setTimeout(){
+    private void setTimeout(boolean agitated){
         motorTimeoutThread = new Thread(new Runnable() {
             LocalDateTime start = LocalDateTime.now();
             @Override
@@ -191,7 +195,18 @@ public class Hopper {
                 try {
                     if (motor.getState()) {
                         motor.setState(false);
-                        setEnabled(false,true);
+                        if(!agitated) {
+                            agitator.setState(true);
+                            try {
+                                Thread.sleep(1500);
+                            } catch (InterruptedException ie) {
+
+                            }
+                            agitator.setState(false);
+                            dispense(true);
+                        }else {
+                            setEnabled(false, true);
+                        }
                     }
                 }catch(PhidgetException ex){
                     setEnabled(false,true);
@@ -233,7 +248,7 @@ public class Hopper {
         try{
             if(Duration.between(MainScreen.getInstance().getStartTime(),LocalDateTime.now()).toMillis() > 10000L) {
                 motor.setState(true);
-                setTimeout();
+                setTimeout(Register.get().getRegister().getForceAllCCardValidate());
             }
         }catch(PhidgetException ex){
             setEnabled(false,false);

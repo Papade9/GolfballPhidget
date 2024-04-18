@@ -521,7 +521,7 @@ public class MainScreen extends JFrame {
         addLogEntry("High Volume Dispense");
         while(_ballCredits > 0){
             if(_hoppers[_lastRapidFireHopper].isEnabled()){
-                _hoppers[_lastRapidFireHopper].dispense();
+                _hoppers[_lastRapidFireHopper].dispense(false);
                 while(_hoppers[_lastRapidFireHopper].motorRunning()) {
                     try {
                         Thread.sleep(650);
@@ -1063,6 +1063,9 @@ public class MainScreen extends JFrame {
 
         //======== scrollPane1 ========
         {
+
+            //---- txtOutput ----
+            txtOutput.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 18));
             scrollPane1.setViewportView(txtOutput);
         }
         contentPane.add(scrollPane1, new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0,
