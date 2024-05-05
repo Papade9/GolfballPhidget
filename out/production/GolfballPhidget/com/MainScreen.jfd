@@ -62,7 +62,7 @@ new FormModel {
 				add( new FormComponent( "javax.swing.JRadioButton" ) {
 					name: "radio1"
 					"text": "text"
-					"font": &Font0 new java.awt.Font( "Segoe UI", 0, 20 )
+					"font": &Font0 new java.awt.Font( "Segoe UI", 0, 36 )
 				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 					"weightx": 1.0
 					"weighty": 1.0

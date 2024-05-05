@@ -8,7 +8,7 @@ public class Main {
     private static Integer NORMAL = 0;
     public static Integer PHIDGET_TEST = 1;
     public static Boolean restart = false;
-    private static String VERSION = "2024-04-15 16:06";
+    private static String VERSION = "2024-05-05 13:33";
 
     public static void main(String[] args) {
         if (args.length > 0) {
@@ -27,6 +27,7 @@ public class Main {
         MainScreen screen = MainScreen.getInstance();
         screen.setRestart(restart);
         screen.setMode(_mode);
+        screen.initialize();
         screen.addLogEntry("VERSION: " + VERSION);
         screen.addLogEntry("Start time: " + LocalDateTime.now().format(Util.dtfDateTimeLong));
         screen.setVisible(true);
