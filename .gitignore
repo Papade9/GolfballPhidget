@@ -12,6 +12,7 @@ $RECYCLE.BIN/
 .idea/workspace.xml
 .idea/dataSources/*
 .idea/dataSources*
+out/*
 
 # Windows Installer files
 *.cab

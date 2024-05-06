@@ -1,4 +1,4 @@
-JFDML JFormDesigner: "8.2.2.0.382" Java: "17.0.10" encoding: "UTF-8"
+JFDML JFormDesigner: "8.2.1.0.348" Java: "17.0.9" encoding: "UTF-8"
 
 new FormModel {
 	contentType: "form/swing"
@@ -45,6 +45,7 @@ new FormModel {
 				name: "scrollPane1"
 				add( new FormComponent( "javax.swing.JTextArea" ) {
 					name: "txtOutput"
+					"font": new java.awt.Font( "Monospaced", 0, 18 )
 				} )
 			}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 				"gridy": 3
@@ -62,7 +63,7 @@ new FormModel {
 				add( new FormComponent( "javax.swing.JRadioButton" ) {
 					name: "radio1"
 					"text": "text"
-					"font": &Font0 new java.awt.Font( "Segoe UI", 0, 20 )
+					"font": &Font0 new java.awt.Font( "Segoe UI", 0, 36 )
 				}, new FormLayoutConstraints( class com.jformdesigner.runtime.GridBagConstraintsEx ) {
 					"weightx": 1.0
 					"weighty": 1.0
