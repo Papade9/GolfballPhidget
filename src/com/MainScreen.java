@@ -533,7 +533,7 @@ public class MainScreen extends JFrame {
         addLogEntry("High Volume Dispense");
         while(_ballCredits > 0){
             if(_hoppers[_lastRapidFireHopper].isEnabled()){
-                _hoppers[_lastRapidFireHopper].dispense();
+                _hoppers[_lastRapidFireHopper].dispense(false);
                 while(_hoppers[_lastRapidFireHopper].motorRunning()) {
                     try {
                         Thread.sleep(650);

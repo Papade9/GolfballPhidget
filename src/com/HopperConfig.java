@@ -1,12 +1,12 @@
 package com;
 
 public enum HopperConfig {
-    Hopper1(new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.ring","1"))},6,new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.motor","1"))},0,new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.button","1"))}),
-    Hopper2(new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.ring","1"))},7,new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.motor","1"))},1,new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.button","1"))}),
-    Hopper3(new int[]{1,Integer.parseInt(Settings.getSetting("topRight.ring","1"))},8,new int[]{1,Integer.parseInt(Settings.getSetting("topRight.motor","1"))},2,new int[]{1,Integer.parseInt(Settings.getSetting("topRight.button","1"))}),
-    Hopper4(new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.ring","1"))},9,new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.motor","1"))},3,new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.button","1"))}),
-    Hopper5(new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.ring","1"))},10,new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.motor","1"))},4,new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.button","1"))}),
-    Hopper6(new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.ring","1"))},11,new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.motor","1"))},5,new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.button","1"))});
+    Hopper1(new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.ring","1"))},6,new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.motor","1"))},0,new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.button","1"))},new int[]{1,Integer.parseInt(Settings.getSetting("topLeft.agitator","1"))}),
+    Hopper2(new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.ring","1"))},7,new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.motor","1"))},1,new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.button","1"))},new int[]{1,Integer.parseInt(Settings.getSetting("topMiddle.agitator","1"))}),
+    Hopper3(new int[]{1,Integer.parseInt(Settings.getSetting("topRight.ring","1"))},8,new int[]{1,Integer.parseInt(Settings.getSetting("topRight.motor","1"))},2,new int[]{1,Integer.parseInt(Settings.getSetting("topRight.button","1"))},new int[]{1,Integer.parseInt(Settings.getSetting("topRight.agitator","1"))}),
+    Hopper4(new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.ring","1"))},9,new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.motor","1"))},3,new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.button","1"))},new int[]{1,Integer.parseInt(Settings.getSetting("bottomLeft.agitator","1"))}),
+    Hopper5(new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.ring","1"))},10,new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.motor","1"))},4,new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.button","1"))},new int[]{1,Integer.parseInt(Settings.getSetting("bottomMiddle.agitator","1"))}),
+    Hopper6(new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.ring","1"))},11,new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.motor","1"))},5,new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.button","1"))},new int[]{1,Integer.parseInt(Settings.getSetting("bottomRight.agitator","1"))});
 
     //Following is for 1st golfball machine prototype with different Phidget output boards MGL Golfball1
     /*Hopper1(new int[]{2,2},6,new int[]{1,0},0,new int[]{4,0}),
@@ -76,18 +76,22 @@ public enum HopperConfig {
         return motorChannel;
     }
 
+    public int[] getAgitatorChannel(){return agitatorChannel;}
+
     public int getDispenseSensorChannel() {
         return dispenseSensorChannel;
     }
 
     private final int[] motorChannel;
+    private final int[] agitatorChannel;
     private final int dispenseSensorChannel;
-    HopperConfig(int[] ring,int btn,int[] motor,int dispense,int[] btnLight){
+    HopperConfig(int[] ring,int btn,int[] motor,int dispense,int[] btnLight,int[] agitator){
         this.ringChannel = ring;
         this.buttonChannel = btn;
         this.motorChannel = motor;
         this.dispenseSensorChannel = dispense;
         this.buttonLightChannel = btnLight;
+        this.agitatorChannel = agitator;
     }
     public static HopperConfig getHopperConfig(int hopperNumber){
         switch(hopperNumber){

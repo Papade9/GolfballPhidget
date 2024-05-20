@@ -9,9 +9,8 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # IntelliJ workspace.xml
-.idea/workspace.xml
-.idea/dataSources/*
-.idea/dataSources*
+.idea/*
+out/*
 
 # Windows Installer files
 *.cab

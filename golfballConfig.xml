@@ -32,4 +32,10 @@
 <entry key="topLeft.motor">0</entry>
 <entry key="topLeft.ring">8</entry>
 <entry key="topRight.motor">2</entry>
+<entry key="topRight.agitator">2</entry>
+<entry key="topLeft.agitator">2</entry>
+<entry key="topMiddle.agitator">2</entry>
+<entry key="bottomRight.agitator">2</entry>
+<entry key="bottomMiddle.agitator">2</entry>
+<entry key="bottomLeft.agitator">2</entry>
 </properties>
