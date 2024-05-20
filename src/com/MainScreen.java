@@ -381,12 +381,17 @@ public class MainScreen extends JFrame {
     }
 
     private boolean processBadgeScan(){
-        CashierEntity cashier = new HQuery.selectRecord("from CashierEntity where gameCardBarcode=:badge","hibernate.cfg.xml",new HQuery.HQueryTuple("badge",txtInput.getText())).query();
-        if(cashier != null && cashier.getManager() && cashier.getSeniorSupervisor()){
-            PlayAudioFile.playSound("./audio/golf-start.wav", false,false);
-            _ballCredits++;
-            addLogEntry("BallCredits:" + _ballCredits);
-            return true;
+        Integer badgeInt = null;
+        if(Util.isInt(txtInput.getText()))
+            badgeInt = Integer.parseInt(txtInput.getText());
+        if(badgeInt != null) {
+            CashierEntity cashier = new HQuery.selectRecord("from CashierEntity where gameCardBarcode=:badge", "hibernate.cfg.xml", new HQuery.HQueryTuple("badge", badgeInt.toString())).query();
+            if (cashier != null && cashier.getManager() && cashier.getSeniorSupervisor()) {
+                PlayAudioFile.playSound("./audio/golf-start.wav", false, false);
+                _ballCredits++;
+                addLogEntry("BallCredits:" + _ballCredits);
+                return true;
+            }
         }
         return false;
     }
@@ -966,6 +971,7 @@ public class MainScreen extends JFrame {
             }
             _acceptETabs = !_acceptETabs;
         }
+        txtInput.requestFocus();
     }
 
     private class HopperFunctionButton extends JButton{
@@ -1070,6 +1076,9 @@ public class MainScreen extends JFrame {
 
         //======== scrollPane1 ========
         {
+
+            //---- txtOutput ----
+            txtOutput.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 18));
             scrollPane1.setViewportView(txtOutput);
         }
         contentPane.add(scrollPane1, new GridBagConstraints(0, 3, 2, 1, 0.0, 0.0,
