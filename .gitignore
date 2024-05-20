@@ -9,8 +9,9 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # IntelliJ workspace.xml
-.idea/*
-/.idea/*
+.idea/workspace.xml
+.idea/dataSources/*
+.idea/dataSources*
 out/*
 /out/*
 /src/META-INF/*
