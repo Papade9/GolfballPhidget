@@ -10,9 +10,10 @@ $RECYCLE.BIN/
 
 # IntelliJ workspace.xml
 .idea/*
+/.idea/*
 out/*
 /out/*
-
+/src/META-INF/*
 # Windows Installer files
 *.cab
 *.msi
