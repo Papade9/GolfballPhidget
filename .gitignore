@@ -15,6 +15,7 @@ $RECYCLE.BIN/
 out/*
 /out/*
 /src/META-INF/*
+
 # Windows Installer files
 *.cab
 *.msi
