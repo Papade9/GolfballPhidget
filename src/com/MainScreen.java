@@ -543,6 +543,7 @@ public class MainScreen extends JFrame {
 
             }
             _lastRapidFireHopper++;
+            decrementCredits();
             if(_lastRapidFireHopper > 5)
                 _lastRapidFireHopper = 0;
         }

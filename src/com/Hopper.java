@@ -44,7 +44,7 @@ public class Hopper {
     }
 
     public void dispense(boolean agitated){
-        if(enabled && MainScreen.getInstance().getBallCredits() > 0 || MainScreen.getInstance().getMode().equals(MainScreen.TEST)) {
+        if((enabled || agitated) && MainScreen.getInstance().getBallCredits() > 0 || MainScreen.getInstance().getMode().equals(MainScreen.TEST)) {
             if (MainScreen.getInstance().debounceTest()) {
                 if(MainScreen.getInstance().getMode().equals(MainScreen.TEST))
                     MainScreen.getInstance().addLogEntry("Button " + hopperNumber + " pressed");
@@ -76,7 +76,7 @@ public class Hopper {
             button = new DigitalInput();
             button.setHubPort(0);
             button.setChannel(HopperConfig.getHopperConfig(number).getButtonChannel());
-            button.addStateChangeListener(digitalInputStateChangeEvent -> {dispense(Register.get().getRegister().getForceAllCCardValidate());});
+            button.addStateChangeListener(digitalInputStateChangeEvent -> {dispense(false);});
             button.open();
             System.out.println("button " + number + " opened");
             dispenseSensor = new DigitalInput();
@@ -196,9 +196,10 @@ public class Hopper {
                     if (motor.getState()) {
                         motor.setState(false);
                         if(!agitated) {
+                            MainScreen.getInstance().addLogEntry("Starting agitator for hopper " + getHopperNumber());
                             agitator.setState(true);
                             try {
-                                Thread.sleep(1500);
+                                Thread.sleep(5500);
                             } catch (InterruptedException ie) {
 
                             }
@@ -248,7 +249,7 @@ public class Hopper {
         try{
             if(Duration.between(MainScreen.getInstance().getStartTime(),LocalDateTime.now()).toMillis() > 10000L) {
                 motor.setState(true);
-                setTimeout(Register.get().getRegister().getForceAllCCardValidate());
+                setTimeout(false);
             }
         }catch(PhidgetException ex){
             setEnabled(false,false);
